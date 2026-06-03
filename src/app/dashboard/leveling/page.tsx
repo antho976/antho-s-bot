@@ -1,6 +1,7 @@
 import { env } from "@/env";
 import { getClient } from "@/server/integrations/discord/client";
 import { getConfig, leaderboard, listRewards } from "@/server/features/leveling/queries";
+import { PageHeader } from "../_components/ui/page-header";
 import { Leaderboard, type LeaderboardEntry } from "./components/leaderboard";
 import { LevelingSettings } from "./components/leveling-settings";
 import { RewardsManager } from "./components/rewards-manager";
@@ -27,10 +28,10 @@ export default async function LevelingPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold">Leveling</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        XP from messages, voice, and reactions — with a leaderboard and role rewards.
-      </p>
+      <PageHeader
+        title="Leveling"
+        description="XP from messages, voice, and reactions — with a leaderboard and role rewards."
+      />
       <Leaderboard entries={entries} />
       <RewardsManager initial={rewards} />
       <LevelingSettings initial={config} />

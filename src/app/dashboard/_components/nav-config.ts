@@ -129,7 +129,7 @@ export const NAV: NavCategory[] = [
     groups: [
       {
         title: "Management",
-        color: "text-neutral-400",
+        color: "text-muted",
         items: [
           { href: "/dashboard/general", label: "General", icon: SlidersHorizontal },
           { href: "/dashboard/settings", label: "Appearance", icon: Palette },

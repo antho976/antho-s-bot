@@ -1,5 +1,6 @@
 import { env } from "@/env";
 import { listGiveaways } from "@/server/features/giveaways/queries";
+import { PageHeader } from "../_components/ui/page-header";
 import { GiveawaysManager } from "./components/giveaways-manager";
 
 export const dynamic = "force-dynamic";
@@ -10,11 +11,10 @@ export default async function GiveawaysPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold">Giveaways</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        Start a giveaway — members enter with 🎉, and the bot picks winners automatically when it
-        ends (optionally gated by level).
-      </p>
+      <PageHeader
+        title="Giveaways"
+        description="Start a giveaway — members enter with 🎉, and the bot picks winners automatically when it ends (optionally gated by level)."
+      />
       <GiveawaysManager initial={giveaways} />
     </div>
   );

@@ -1,5 +1,6 @@
 import { env } from "@/env";
 import { getConfig, listTickets } from "@/server/features/support/queries";
+import { PageHeader } from "../_components/ui/page-header";
 import { SupportSettings } from "./components/support-settings";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ const PRIORITY_CLR: Record<string, string> = {
   urgent: "text-red-400",
   high: "text-amber-400",
   medium: "text-sky-400",
-  low: "text-neutral-400",
+  low: "text-muted",
 };
 
 export default async function SupportPage() {
@@ -20,23 +21,27 @@ export default async function SupportPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold">Support Tickets</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        Members open tickets with <code>/ticket open</code> — each is auto-triaged by priority &amp;
-        category into a private thread and your staff role is pinged. Close with{" "}
-        <code>/ticket close</code>.
-      </p>
+      <PageHeader
+        title="Support Tickets"
+        description={
+          <>
+            Members open tickets with <code>/ticket open</code> — each is auto-triaged by priority
+            &amp; category into a private thread and your staff role is pinged. Close with{" "}
+            <code>/ticket close</code>.
+          </>
+        }
+      />
 
       <SupportSettings initial={config} />
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold">Tickets</h2>
+        <h2 className="text-lg font-semibold text-text">Tickets</h2>
         {tickets.length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-500">No tickets yet.</p>
+          <p className="mt-2 text-sm text-faint">No tickets yet.</p>
         ) : (
-          <div className="mt-3 overflow-hidden rounded-xl border border-neutral-800">
+          <div className="mt-3 overflow-hidden rounded-xl border border-border">
             <table className="w-full text-sm">
-              <thead className="bg-neutral-900 text-neutral-400">
+              <thead className="bg-surface-1 text-muted">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">#</th>
                   <th className="px-3 py-2 text-left font-medium">Subject</th>
@@ -48,15 +53,15 @@ export default async function SupportPage() {
               </thead>
               <tbody>
                 {tickets.map((t) => (
-                  <tr key={t.id} className="border-t border-neutral-800">
-                    <td className="px-3 py-2 text-neutral-500">{t.number}</td>
-                    <td className="max-w-xs truncate px-3 py-2 text-neutral-100">{t.subject}</td>
-                    <td className="px-3 py-2 text-neutral-400">{t.category}</td>
+                  <tr key={t.id} className="border-t border-border">
+                    <td className="px-3 py-2 text-faint">{t.number}</td>
+                    <td className="max-w-xs truncate px-3 py-2 text-text">{t.subject}</td>
+                    <td className="px-3 py-2 text-muted">{t.category}</td>
                     <td className={`px-3 py-2 capitalize ${PRIORITY_CLR[t.priority] ?? ""}`}>
                       {t.priority}
                     </td>
-                    <td className="px-3 py-2 text-neutral-400">{t.status}</td>
-                    <td className="px-3 py-2 text-xs text-neutral-600">
+                    <td className="px-3 py-2 text-muted">{t.status}</td>
+                    <td className="px-3 py-2 text-xs text-faint">
                       {t.createdAt ? new Date(t.createdAt).toLocaleString() : ""}
                     </td>
                   </tr>

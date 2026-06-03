@@ -16,8 +16,8 @@ function Dot({ ok }: { ok: boolean }) {
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-5">
-      <div className="text-xs uppercase tracking-wide text-neutral-500">{title}</div>
+    <div className="rounded-xl border border-border bg-surface-1 p-5">
+      <div className="text-xs uppercase tracking-wide text-faint">{title}</div>
       <div className="mt-3 space-y-2 text-sm">{children}</div>
     </div>
   );
@@ -26,8 +26,8 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-neutral-400">{label}</span>
-      <span className="text-neutral-100">{value}</span>
+      <span className="text-muted">{label}</span>
+      <span className="text-text">{value}</span>
     </div>
   );
 }

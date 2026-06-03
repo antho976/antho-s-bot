@@ -1,18 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { Input } from "./ui/input";
 import { NAV, activeCategoryKey, type NavItem } from "./nav-config";
+import { useNavSearch } from "./nav-search";
 
 const itemBase = "group flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition";
 
 export function SideNav() {
   const pathname = usePathname();
-  const [q, setQ] = useState("");
-  const query = q.trim().toLowerCase();
+  const { query: rawQuery } = useNavSearch();
+  const query = rawQuery.trim().toLowerCase();
   const cat = NAV.find((c) => c.key === activeCategoryKey(pathname)) ?? NAV[0];
 
   const allItems = NAV.flatMap((c) => c.groups.flatMap((g) => g.items));
@@ -39,8 +38,6 @@ export function SideNav() {
 
   return (
     <nav className="flex flex-col gap-4 px-3 py-4">
-      <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
-
       {results ? (
         <div className="flex flex-col gap-0.5">
           {results.length === 0 && <p className="px-2 text-sm text-faint">No matches.</p>}

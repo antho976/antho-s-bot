@@ -9,13 +9,13 @@ export interface LeaderboardEntry {
 export function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
   return (
     <section className="mt-6">
-      <h2 className="text-lg font-semibold">Leaderboard</h2>
+      <h2 className="text-lg font-semibold text-text">Leaderboard</h2>
       {entries.length === 0 ? (
-        <p className="mt-2 text-sm text-neutral-500">No XP earned yet.</p>
+        <p className="mt-2 text-sm text-faint">No XP earned yet.</p>
       ) : (
-        <div className="mt-3 overflow-hidden rounded-xl border border-neutral-800">
+        <div className="mt-3 overflow-hidden rounded-xl border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-neutral-900 text-neutral-400">
+            <thead className="bg-surface-1 text-muted">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">#</th>
                 <th className="px-4 py-2 text-left font-medium">Member</th>
@@ -26,12 +26,12 @@ export function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
             </thead>
             <tbody>
               {entries.map((e, i) => (
-                <tr key={e.userId} className="border-t border-neutral-800 bg-neutral-950/40">
-                  <td className="px-4 py-2 text-neutral-500">{i + 1}</td>
-                  <td className="px-4 py-2 text-neutral-100">{e.name}</td>
-                  <td className="px-4 py-2 text-right">{e.level}</td>
-                  <td className="px-4 py-2 text-right text-neutral-300">{e.xp.toLocaleString()}</td>
-                  <td className="px-4 py-2 text-right text-neutral-400">{e.prestige || "—"}</td>
+                <tr key={e.userId} className="border-t border-border">
+                  <td className="px-4 py-2 text-faint">{i + 1}</td>
+                  <td className="px-4 py-2 text-text">{e.name}</td>
+                  <td className="px-4 py-2 text-right text-text">{e.level}</td>
+                  <td className="px-4 py-2 text-right text-muted">{e.xp.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right text-muted">{e.prestige || "—"}</td>
                 </tr>
               ))}
             </tbody>

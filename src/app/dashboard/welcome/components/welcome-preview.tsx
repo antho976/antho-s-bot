@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/app/dashboard/_components/ui/button";
 
 export function WelcomePreview() {
   const [src, setSrc] = useState<string | null>(null);
@@ -27,29 +28,25 @@ export function WelcomePreview() {
 
   return (
     <section className="mt-10">
-      <h2 className="text-lg font-semibold">Preview</h2>
-      <p className="mt-1 text-sm text-neutral-400">
+      <h2 className="text-lg font-semibold text-text">Preview</h2>
+      <p className="mt-1 text-sm text-muted">
         Renders a sample card with your avatar and current background settings.
       </p>
       <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => preview("welcome")}
-          disabled={busy}
-          className="rounded-md bg-neutral-800 px-3 py-1.5 text-sm hover:bg-neutral-700 disabled:opacity-50"
-        >
+        <Button variant="secondary" onClick={() => preview("welcome")} disabled={busy}>
           Preview welcome
-        </button>
-        <button
-          onClick={() => preview("goodbye")}
-          disabled={busy}
-          className="rounded-md bg-neutral-800 px-3 py-1.5 text-sm hover:bg-neutral-700 disabled:opacity-50"
-        >
+        </Button>
+        <Button variant="secondary" onClick={() => preview("goodbye")} disabled={busy}>
           Preview goodbye
-        </button>
+        </Button>
       </div>
       {src && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="card preview" className="mt-3 w-full max-w-2xl rounded-xl border border-neutral-800" />
+        <img
+          src={src}
+          alt="card preview"
+          className="mt-3 w-full max-w-2xl rounded-xl border border-border"
+        />
       )}
     </section>
   );

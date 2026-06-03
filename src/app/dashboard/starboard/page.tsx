@@ -1,5 +1,6 @@
 import { env } from "@/env";
 import { getConfig } from "@/server/features/starboard/queries";
+import { PageHeader } from "../_components/ui/page-header";
 import { StarboardSettings } from "./components/starboard-settings";
 
 export const dynamic = "force-dynamic";
@@ -10,11 +11,10 @@ export default async function StarboardPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold">Highlights</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        When a message gets enough star reactions, the bot reposts it to your highlights channel
-        and keeps the star count updated.
-      </p>
+      <PageHeader
+        title="Highlights"
+        description="When a message gets enough star reactions, the bot reposts it to your highlights channel and keeps the star count updated."
+      />
       <StarboardSettings initial={config} />
     </div>
   );

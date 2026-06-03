@@ -1,6 +1,7 @@
 import { env } from "@/env";
 import { listChannels } from "@/server/features/notifications/queries";
 import { listSchedule } from "@/server/features/notifications/schedule-queries";
+import { PageHeader } from "../_components/ui/page-header";
 import { NotificationsManager } from "./components/notifications-manager";
 import { ScheduleManager } from "./components/schedule-manager";
 
@@ -15,11 +16,15 @@ export default async function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold">Notifications</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        Watch Twitch &amp; YouTube channels and post alerts. Use the <strong>Fake</strong>{" "}
-        buttons to preview an alert in your Discord — no going live required.
-      </p>
+      <PageHeader
+        title="Notifications"
+        description={
+          <>
+            Watch Twitch &amp; YouTube channels and post alerts. Use the <strong>Fake</strong>{" "}
+            buttons to preview an alert in your Discord — no going live required.
+          </>
+        }
+      />
       <NotificationsManager initial={channels} />
       <ScheduleManager initial={schedule} channels={channels} />
     </div>

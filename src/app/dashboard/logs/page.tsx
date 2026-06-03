@@ -1,12 +1,10 @@
+import { PageHeader } from "../_components/ui/page-header";
 import { LogsLive } from "./components/logs-live";
 
 export default function LogsPage() {
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold">Logs</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        Live feed from the bot. Filter by level or text.
-      </p>
+      <PageHeader title="Logs" description="Live feed from the bot. Filter by level or text." />
       <LogsLive />
     </div>
   );

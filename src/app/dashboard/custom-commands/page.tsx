@@ -1,5 +1,6 @@
 import { env } from "@/env";
 import { listCommands } from "@/server/features/custom-commands/queries";
+import { PageHeader } from "../_components/ui/page-header";
 import { CustomCommandsManager } from "./components/custom-commands-manager";
 
 export const dynamic = "force-dynamic";
@@ -10,11 +11,15 @@ export default async function CustomCommandsPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold">Custom Commands</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        <code>!name</code> commands that post text and/or an image — with cooldowns, usage limits,
-        auto-delete, and role/channel restrictions.
-      </p>
+      <PageHeader
+        title="Custom Commands"
+        description={
+          <>
+            <code>!name</code> commands that post text and/or an image — with cooldowns, usage
+            limits, auto-delete, and role/channel restrictions.
+          </>
+        }
+      />
       <CustomCommandsManager initial={commands} />
     </div>
   );
