@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { StreamChannel } from "@/server/features/notifications/queries";
+import { ChannelSelect, RoleSelect } from "@/app/dashboard/_components/guild-select";
 
 export interface ChannelFormValues {
   platform: "twitch" | "youtube";
@@ -81,17 +82,12 @@ export function ChannelForm({
           <input className={inputCls} value={v.displayName} onChange={(e) => set("displayName", e.target.value)} />
         </label>
         <label className="block text-sm">
-          <span className="text-neutral-400">Discord channel ID (where to post)</span>
-          <input
-            className={inputCls}
-            value={v.discordChannelId}
-            onChange={(e) => set("discordChannelId", e.target.value)}
-            placeholder="right-click channel → Copy ID"
-          />
+          <span className="text-neutral-400">Discord channel (where to post)</span>
+          <ChannelSelect value={v.discordChannelId} onChange={(val) => set("discordChannelId", val)} />
         </label>
         <label className="block text-sm">
-          <span className="text-neutral-400">Ping role ID (optional)</span>
-          <input className={inputCls} value={v.pingRoleId} onChange={(e) => set("pingRoleId", e.target.value)} />
+          <span className="text-neutral-400">Ping role (optional)</span>
+          <RoleSelect value={v.pingRoleId} onChange={(val) => set("pingRoleId", val)} />
         </label>
       </div>
 

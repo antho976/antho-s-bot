@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import type { MemberLogConfig } from "@/server/features/member-logs/queries";
-
-const inputCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
 
 const TOGGLES: { key: keyof MemberLogConfig; label: string }[] = [
   { key: "logJoins", label: "Joins" },
@@ -68,13 +66,8 @@ export function MemberLogsSettings({ initial }: { initial: MemberLogConfig }) {
         </label>
 
         <label className="block text-sm">
-          <span className="text-neutral-400">Log channel ID</span>
-          <input
-            className={inputCls}
-            value={c.channelId ?? ""}
-            onChange={(e) => set("channelId", e.target.value || null)}
-            placeholder="right-click channel → Copy ID"
-          />
+          <span className="text-neutral-400">Log channel</span>
+          <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
         </label>
 
         <div>

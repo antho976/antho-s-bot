@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PanelWithPairs } from "@/server/features/reaction-roles/queries";
+import { ChannelSelect, RoleSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
@@ -89,8 +90,8 @@ export function ReactionRolesManager({ initial }: { initial: PanelWithPairs[] })
         <div className="space-y-3 rounded-xl border border-indigo-900/60 bg-neutral-900 p-5">
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="text-sm">
-              <span className="block text-neutral-400">Channel ID</span>
-              <input className={inputCls} value={channelId} onChange={(e) => setChannelId(e.target.value)} />
+              <span className="block text-neutral-400">Channel</span>
+              <ChannelSelect value={channelId} onChange={setChannelId} />
             </label>
             <label className="text-sm">
               <span className="block text-neutral-400">Title</span>
@@ -116,12 +117,9 @@ export function ReactionRolesManager({ initial }: { initial: PanelWithPairs[] })
                   onChange={(e) => setPair(i, "emoji", e.target.value)}
                   placeholder="✅ or <:name:id>"
                 />
-                <input
-                  className={inputCls}
-                  value={p.roleId}
-                  onChange={(e) => setPair(i, "roleId", e.target.value)}
-                  placeholder="role ID"
-                />
+                <div className="flex-1">
+                  <RoleSelect value={p.roleId} onChange={(v) => setPair(i, "roleId", v)} />
+                </div>
                 <button
                   onClick={() => setPairs((ps) => (ps.length > 1 ? ps.filter((_, idx) => idx !== i) : ps))}
                   className="shrink-0 rounded-md border border-neutral-700 px-2 text-neutral-400 hover:bg-neutral-800"

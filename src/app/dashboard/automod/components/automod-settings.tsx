@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AutomodConfig } from "@/server/features/automod/queries";
+import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
@@ -46,13 +47,8 @@ export function AutomodSettings({ initial }: { initial: AutomodConfig }) {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm">
-            <span className="block text-neutral-400">Log channel ID (optional)</span>
-            <input
-              className={inputCls}
-              value={c.logChannelId ?? ""}
-              onChange={(e) => set("logChannelId", e.target.value || null)}
-              placeholder="right-click channel → Copy ID"
-            />
+            <span className="block text-neutral-400">Log channel (optional)</span>
+            <ChannelSelect value={c.logChannelId ?? ""} onChange={(v) => set("logChannelId", v || null)} />
           </label>
           <label className="text-sm">
             <span className="block text-neutral-400">Timeout length (minutes)</span>

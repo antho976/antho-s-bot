@@ -1,7 +1,35 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  HeartPulse,
+  ScrollText,
+  Users,
+  Bell,
+  Hand,
+  Star,
+  Gift,
+  Vote,
+  Cake,
+  PawPrint,
+  Shield,
+  ClipboardList,
+  LifeBuoy,
+  SmilePlus,
+  Sparkles,
+  MessageSquareText,
+  BarChart3,
+  LineChart,
+  Settings,
+  SlidersHorizontal,
+  Palette,
+  Bot,
+  Gamepad2,
+} from "lucide-react";
+
 export interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
 }
 
 export interface NavGroup {
@@ -13,7 +41,7 @@ export interface NavGroup {
 export interface NavCategory {
   key: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   soon?: boolean;
   groups: NavGroup[];
 }
@@ -23,15 +51,15 @@ export const NAV: NavCategory[] = [
   {
     key: "core",
     label: "Core",
-    icon: "🛰️",
+    icon: LayoutDashboard,
     groups: [
       {
         title: "Monitoring",
         color: "text-indigo-400",
         items: [
-          { href: "/dashboard", label: "Overview", icon: "🏠" },
-          { href: "/dashboard/health", label: "Bot Health", icon: "💓" },
-          { href: "/dashboard/logs", label: "Logs", icon: "📜" },
+          { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+          { href: "/dashboard/health", label: "Bot Health", icon: HeartPulse },
+          { href: "/dashboard/logs", label: "Logs", icon: ScrollText },
         ],
       },
     ],
@@ -39,76 +67,79 @@ export const NAV: NavCategory[] = [
   {
     key: "community",
     label: "Community",
-    icon: "👥",
+    icon: Users,
     groups: [
       {
         title: "Engagement",
         color: "text-amber-400",
         items: [
-          { href: "/dashboard/notifications", label: "Stream Alerts", icon: "🔔" },
-          { href: "/dashboard/welcome", label: "Welcome", icon: "👋" },
-          { href: "/dashboard/leveling", label: "Leveling", icon: "⭐" },
+          { href: "/dashboard/notifications", label: "Stream Alerts", icon: Bell },
+          { href: "/dashboard/welcome", label: "Welcome", icon: Hand },
+          { href: "/dashboard/leveling", label: "Leveling", icon: Star },
         ],
       },
       {
         title: "Events",
         color: "text-pink-400",
         items: [
-          { href: "/dashboard/giveaways", label: "Giveaways", icon: "🎉" },
-          { href: "/dashboard/polls", label: "Polls", icon: "📊" },
-          { href: "/dashboard/birthdays", label: "Birthdays", icon: "🎂" },
+          { href: "/dashboard/giveaways", label: "Giveaways", icon: Gift },
+          { href: "/dashboard/polls", label: "Polls", icon: Vote },
+          { href: "/dashboard/birthdays", label: "Birthdays", icon: Cake },
         ],
       },
       {
         title: "Pets",
         color: "text-emerald-400",
-        items: [{ href: "/dashboard/pets", label: "Pets", icon: "🐾" }],
+        items: [{ href: "/dashboard/pets", label: "Pets", icon: PawPrint }],
       },
       {
         title: "Moderation",
         color: "text-red-400",
         items: [
-          { href: "/dashboard/automod", label: "Auto-Mod", icon: "🛡️" },
-          { href: "/dashboard/member-logs", label: "Member Logs", icon: "📋" },
-          { href: "/dashboard/support", label: "Support & Feedback", icon: "🎫" },
-          { href: "/dashboard/reaction-roles", label: "Reaction Roles", icon: "✅" },
-          { href: "/dashboard/starboard", label: "Highlights", icon: "🌟" },
+          { href: "/dashboard/automod", label: "Auto-Mod", icon: Shield },
+          { href: "/dashboard/member-logs", label: "Member Logs", icon: ClipboardList },
+          { href: "/dashboard/support", label: "Support & Feedback", icon: LifeBuoy },
+          { href: "/dashboard/reaction-roles", label: "Reaction Roles", icon: SmilePlus },
+          { href: "/dashboard/starboard", label: "Highlights", icon: Sparkles },
         ],
       },
       {
         title: "Content",
         color: "text-sky-400",
-        items: [{ href: "/dashboard/custom-commands", label: "Tags / Commands", icon: "💬" }],
+        items: [{ href: "/dashboard/custom-commands", label: "Tags / Commands", icon: MessageSquareText }],
       },
     ],
   },
   {
     key: "analytics",
     label: "Analytics",
-    icon: "📈",
+    icon: BarChart3,
     groups: [
       {
         title: "Insights",
         color: "text-indigo-400",
-        items: [{ href: "/dashboard/analytics", label: "Analytics", icon: "📈" }],
+        items: [{ href: "/dashboard/analytics", label: "Analytics", icon: LineChart }],
       },
     ],
   },
   {
     key: "config",
     label: "Config",
-    icon: "⚙️",
+    icon: Settings,
     groups: [
       {
         title: "Management",
         color: "text-neutral-400",
-        items: [{ href: "/dashboard/general", label: "General", icon: "⚙️" }],
+        items: [
+          { href: "/dashboard/general", label: "General", icon: SlidersHorizontal },
+          { href: "/dashboard/settings", label: "Appearance", icon: Palette },
+        ],
       },
     ],
   },
   // Deferred-by-design (matches the roadmap): shown but not yet available.
-  { key: "smartbot", label: "SmartBot", icon: "🤖", soon: true, groups: [] },
-  { key: "rpg", label: "RPG", icon: "🎮", soon: true, groups: [] },
+  { key: "smartbot", label: "SmartBot", icon: Bot, soon: true, groups: [] },
+  { key: "rpg", label: "RPG", icon: Gamepad2, soon: true, groups: [] },
 ];
 
 /** Which top category owns the current path (defaults to core). */

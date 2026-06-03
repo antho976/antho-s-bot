@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { StarboardConfig } from "@/server/features/starboard/queries";
+import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
@@ -64,13 +65,8 @@ export function StarboardSettings({ initial }: { initial: StarboardConfig }) {
             />
           </label>
           <label className="text-sm">
-            <span className="block text-neutral-400">Highlights channel ID</span>
-            <input
-              className={inputCls}
-              value={c.channelId ?? ""}
-              onChange={(e) => set("channelId", e.target.value || null)}
-              placeholder="right-click channel → Copy ID"
-            />
+            <span className="block text-neutral-400">Highlights channel</span>
+            <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
           </label>
         </div>
 

@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import type { BirthdayConfig } from "@/server/features/birthdays/queries";
-
-const inputCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+import { ChannelSelect, RoleSelect } from "@/app/dashboard/_components/guild-select";
 
 export function BirthdaySettings({ initial }: { initial: BirthdayConfig }) {
   const [c, setC] = useState<BirthdayConfig>(initial);
@@ -48,21 +46,12 @@ export function BirthdaySettings({ initial }: { initial: BirthdayConfig }) {
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm">
-            <span className="block text-neutral-400">Announce channel ID</span>
-            <input
-              className={inputCls}
-              value={c.channelId ?? ""}
-              onChange={(e) => set("channelId", e.target.value || null)}
-              placeholder="right-click channel → Copy ID"
-            />
+            <span className="block text-neutral-400">Announce channel</span>
+            <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
           </label>
           <label className="text-sm">
-            <span className="block text-neutral-400">Birthday role ID (optional, for the day)</span>
-            <input
-              className={inputCls}
-              value={c.roleId ?? ""}
-              onChange={(e) => set("roleId", e.target.value || null)}
-            />
+            <span className="block text-neutral-400">Birthday role (optional, for the day)</span>
+            <RoleSelect value={c.roleId ?? ""} onChange={(v) => set("roleId", v || null)} />
           </label>
         </div>
         <p className="text-xs text-neutral-500">Members set theirs with <code>/birthday set</code>.</p>

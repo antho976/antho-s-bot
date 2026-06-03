@@ -1,4 +1,6 @@
 import { getHealth } from "@/server/core/health";
+import { PageHeader } from "./_components/ui/page-header";
+import { StatTile } from "./_components/ui/stat-tile";
 import { MaintenanceActions } from "./_components/maintenance-actions";
 
 export const dynamic = "force-dynamic";
@@ -7,65 +9,29 @@ export default async function OverviewPage() {
   const health = await getHealth();
 
   const stats = [
-    {
-      label: "Bot",
-      value: health.discord.ready ? "Online" : "Offline",
-      good: health.discord.ready,
-    },
-    {
-      label: "Database",
-      value: health.db.ok ? "Connected" : "Down",
-      good: health.db.ok,
-    },
-    {
-      label: "Guilds",
-      value: health.discord.guilds ?? "—",
-      good: true,
-    },
+    { label: "Bot", value: health.discord.ready ? "Online" : "Offline", bad: !health.discord.ready },
+    { label: "Database", value: health.db.ok ? "Connected" : "Down", bad: !health.db.ok },
+    { label: "Guilds", value: health.discord.guilds ?? "—" },
     {
       label: "Gateway ping",
       value: health.discord.ping != null ? `${health.discord.ping} ms` : "—",
-      good: true,
     },
   ];
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold">Overview</h1>
-      <p className="mt-1 text-sm text-neutral-400">
-        Stream notifications are live. Manage channels &amp; schedule under Notifications.
-      </p>
+      <PageHeader
+        title="Overview"
+        description="Stream notifications are live. Manage channels & schedule under Stream Alerts."
+      />
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((s) => (
-          <div
-            key={s.label}
-            className="rounded-xl border border-neutral-800 bg-neutral-900 p-4"
-          >
-            <div className="text-xs uppercase tracking-wide text-neutral-500">
-              {s.label}
-            </div>
-            <div
-              className={`mt-1 text-lg font-semibold ${
-                s.good ? "text-neutral-100" : "text-red-400"
-              }`}
-            >
-              {s.value}
-            </div>
-          </div>
+          <StatTile key={s.label} label={s.label} value={s.value} tone={s.bad ? "bad" : "default"} />
         ))}
       </div>
 
       <MaintenanceActions />
-
-      <div className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
-        <h2 className="text-sm font-semibold text-neutral-200">What&apos;s next</h2>
-        <ul className="mt-3 space-y-2 text-sm text-neutral-400">
-          <li>• Phase 1 — connect real Twitch/YouTube (add API keys) to go live-automatic</li>
-          <li>• Phase 2 — Welcome artwork &amp; leveling</li>
-          <li>• Phase 3 — Auto-mod, member logs, support tickets</li>
-        </ul>
-      </div>
     </div>
   );
 }

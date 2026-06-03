@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { WelcomeConfig } from "@/server/features/welcome/queries";
+import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
@@ -126,13 +127,8 @@ function Block({
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
-          <span className="block text-neutral-400">Channel ID</span>
-          <input
-            className={inputCls}
-            value={channelId ?? ""}
-            onChange={(e) => onChannel(e.target.value || null)}
-            placeholder="right-click channel → Copy ID"
-          />
+          <span className="block text-neutral-400">Channel</span>
+          <ChannelSelect value={channelId ?? ""} onChange={(v) => onChannel(v || null)} />
         </label>
         <label className="text-sm">
           <span className="block text-neutral-400">Mode</span>

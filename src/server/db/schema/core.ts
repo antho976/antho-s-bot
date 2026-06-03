@@ -42,6 +42,13 @@ export const featureToggles = sqliteTable(
   (t) => [uniqueIndex("feature_toggles_guild_key").on(t.guildId, t.featureKey)],
 );
 
+/** Global dashboard preferences, one row per key (e.g. accent color). */
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).$defaultFn(now),
+});
+
 /** Every dashboard change, for the audit log (who/what/when/before/after). */
 export const auditLog = sqliteTable(
   "audit_log",

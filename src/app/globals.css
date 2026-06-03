@@ -1,6 +1,23 @@
 @import "tailwindcss";
 
 :root {
+  /* Dashboard dark palette — semantic surfaces (maps onto the neutral scale we
+     already used, so the look is unchanged but now token-driven & themeable). */
+  --surface-0: #0a0a0a; /* app background / deepest */
+  --surface-1: #171717; /* cards / panels */
+  --surface-2: #232323; /* raised / hover / track */
+  --border: #262626; /* hairline dividers */
+  --border-strong: #404040; /* input borders */
+  --text: #f5f5f5; /* primary text */
+  --muted: #a3a3a3; /* secondary text */
+  --faint: #737373; /* labels / captions */
+
+  /* Accent — overridable per-subtree via inline style `--accent: #hex`
+     (set from the user's choice in Settings). Default = indigo. */
+  --accent: #6366f1;
+  --accent-contrast: #ffffff; /* text/icon on top of accent */
+
+  /* Landing page (light) — left untouched. */
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -10,6 +27,22 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  /* Inlined so var(--accent) resolves at the element — runtime accent changes
+     (and any subtree override) flow through hover/soft variants too. */
+  --color-accent: var(--accent);
+  --color-accent-strong: color-mix(in oklab, var(--accent), black 14%);
+  --color-accent-soft: color-mix(in oklab, var(--accent) 15%, transparent);
+  --color-accent-contrast: var(--accent-contrast);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +55,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, Arial, sans-serif;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 30%, transparent);
 }

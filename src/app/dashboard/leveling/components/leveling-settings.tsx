@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { LevelConfig } from "@/server/features/leveling/queries";
+import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
@@ -80,12 +81,8 @@ export function LevelingSettings({ initial }: { initial: LevelConfig }) {
 
         <Toggle label="Announce level-ups" checked={c.announce} onChange={(v) => set("announce", v)} />
         <label className="block text-sm">
-          <span className="text-neutral-400">Announce channel ID (blank = where it happened)</span>
-          <input
-            className={inputCls}
-            value={c.announceChannelId ?? ""}
-            onChange={(e) => set("announceChannelId", e.target.value || null)}
-          />
+          <span className="text-neutral-400">Announce channel (blank = where it happened)</span>
+          <ChannelSelect value={c.announceChannelId ?? ""} onChange={(v) => set("announceChannelId", v || null)} />
         </label>
 
         <button

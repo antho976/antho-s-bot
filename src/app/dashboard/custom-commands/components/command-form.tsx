@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import type { CustomCommand } from "@/server/features/custom-commands/queries";
+import { ChannelMultiSelect, RoleMultiSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+
+const toList = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
+const toStr = (a: string[]) => a.join(", ");
 
 export interface CommandFormValues {
   name: string;
@@ -115,15 +119,14 @@ export function CommandForm({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
-          <span className="block text-neutral-400">Allowed role IDs (comma, blank=any)</span>
-          <input className={inputCls} value={v.allowedRoles} onChange={(e) => set("allowedRoles", e.target.value)} />
+          <span className="block text-neutral-400">Allowed roles (none checked = any)</span>
+          <RoleMultiSelect value={toList(v.allowedRoles)} onChange={(a) => set("allowedRoles", toStr(a))} />
         </label>
         <label className="text-sm">
-          <span className="block text-neutral-400">Allowed channel IDs (comma, blank=any)</span>
-          <input
-            className={inputCls}
-            value={v.allowedChannels}
-            onChange={(e) => set("allowedChannels", e.target.value)}
+          <span className="block text-neutral-400">Allowed channels (none checked = any)</span>
+          <ChannelMultiSelect
+            value={toList(v.allowedChannels)}
+            onChange={(a) => set("allowedChannels", toStr(a))}
           />
         </label>
       </div>

@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import type { SupportConfig } from "@/server/features/support/queries";
-
-const inputCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+import { ChannelSelect, RoleSelect } from "@/app/dashboard/_components/guild-select";
 
 export function SupportSettings({ initial }: { initial: SupportConfig }) {
   const [c, setC] = useState<SupportConfig>(initial);
@@ -49,22 +47,12 @@ export function SupportSettings({ initial }: { initial: SupportConfig }) {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm">
-            <span className="block text-neutral-400">Tickets channel ID (threads are created here)</span>
-            <input
-              className={inputCls}
-              value={c.channelId ?? ""}
-              onChange={(e) => set("channelId", e.target.value || null)}
-              placeholder="right-click channel → Copy ID"
-            />
+            <span className="block text-neutral-400">Tickets channel (threads are created here)</span>
+            <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
           </label>
           <label className="text-sm">
-            <span className="block text-neutral-400">Staff role ID (pinged on new tickets)</span>
-            <input
-              className={inputCls}
-              value={c.staffRoleId ?? ""}
-              onChange={(e) => set("staffRoleId", e.target.value || null)}
-              placeholder="right-click role → Copy ID"
-            />
+            <span className="block text-neutral-400">Staff role (pinged on new tickets)</span>
+            <RoleSelect value={c.staffRoleId ?? ""} onChange={(v) => set("staffRoleId", v || null)} />
           </label>
         </div>
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Giveaway } from "@/server/features/giveaways/queries";
+import { ChannelSelect, RoleSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
@@ -100,8 +101,8 @@ export function GiveawaysManager({ initial }: { initial: Giveaway[] }) {
               <input className={inputCls} value={prize} onChange={(e) => setPrize(e.target.value)} />
             </label>
             <label className="text-sm">
-              <span className="block text-neutral-400">Channel ID</span>
-              <input className={inputCls} value={channelId} onChange={(e) => setChannelId(e.target.value)} />
+              <span className="block text-neutral-400">Channel</span>
+              <ChannelSelect value={channelId} onChange={setChannelId} />
             </label>
           </div>
           <div className="grid gap-3 sm:grid-cols-4">
@@ -118,8 +119,8 @@ export function GiveawaysManager({ initial }: { initial: Giveaway[] }) {
               <input type="number" className={inputCls} value={minLevel} onChange={(e) => setMinLevel(Number(e.target.value))} />
             </label>
             <label className="text-sm">
-              <span className="block text-neutral-400">Ping role ID</span>
-              <input className={inputCls} value={pingRoleId} onChange={(e) => setPingRoleId(e.target.value)} />
+              <span className="block text-neutral-400">Ping role</span>
+              <RoleSelect value={pingRoleId} onChange={setPingRoleId} />
             </label>
           </div>
           <div className="flex gap-2">

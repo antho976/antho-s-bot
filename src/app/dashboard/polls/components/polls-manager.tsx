@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Poll } from "@/server/features/polls/queries";
+import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
@@ -94,8 +95,8 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
               <input className={inputCls} value={question} onChange={(e) => setQuestion(e.target.value)} />
             </label>
             <label className="text-sm">
-              <span className="block text-neutral-400">Channel ID</span>
-              <input className={inputCls} value={channelId} onChange={(e) => setChannelId(e.target.value)} />
+              <span className="block text-neutral-400">Channel</span>
+              <ChannelSelect value={channelId} onChange={setChannelId} />
             </label>
           </div>
 

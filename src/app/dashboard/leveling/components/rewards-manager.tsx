@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { LevelReward } from "@/server/features/leveling/queries";
+import { RoleSelect } from "@/app/dashboard/_components/guild-select";
 
 const inputCls =
   "rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
@@ -52,13 +53,8 @@ export function RewardsManager({ initial }: { initial: LevelReward[] }) {
           <input type="number" className={inputCls} value={level} onChange={(e) => setLevel(e.target.value)} />
         </label>
         <label className="text-sm">
-          <span className="block text-neutral-400">Role ID</span>
-          <input
-            className={inputCls}
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-            placeholder="right-click role → Copy ID"
-          />
+          <span className="block text-neutral-400">Role</span>
+          <RoleSelect value={roleId} onChange={(v) => setRoleId(v)} />
         </label>
         <button
           onClick={add}
