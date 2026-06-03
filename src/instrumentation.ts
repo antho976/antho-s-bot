@@ -33,11 +33,13 @@ export async function register(): Promise<void> {
     const { checkGiveaways } = await import("@/server/features/giveaways/service");
     const { checkPolls } = await import("@/server/features/polls/service");
     const { checkBirthdays } = await import("@/server/features/birthdays/service");
+    const { rollupAnalytics } = await import("@/server/features/analytics/rollup");
     onTick("stream-reminders", checkReminders);
     onTick("voice-xp", checkVoiceXp);
     onTick("giveaways", checkGiveaways);
     onTick("polls", checkPolls);
     onTick("birthdays", checkBirthdays);
+    onTick("analytics-rollup", rollupAnalytics);
     startScheduler();
   } catch (err) {
     logger.error("boot", "Scheduler failed to start", err);

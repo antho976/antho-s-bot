@@ -1,0 +1,20 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/server/auth";
+import { env } from "@/env";
+import { exportData } from "@/server/features/backups/export";
+
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  const session = await auth();
+  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
+
+  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const data = await exportData(guildId);
+  return new NextResponse(JSON.stringify(data, null, 2), {
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Disposition": `attachment; filename="export-${guildId}.json"`,
+    },
+  });
+}
