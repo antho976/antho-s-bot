@@ -29,9 +29,22 @@ export async function register(): Promise<void> {
   try {
     const { startScheduler, onTick } = await import("@/server/core/scheduler");
     const { checkReminders } = await import("@/server/features/notifications/reminders");
+    const { checkVoiceXp } = await import("@/server/features/leveling/voice-tick");
     onTick("stream-reminders", checkReminders);
+    onTick("voice-xp", checkVoiceXp);
     startScheduler();
   } catch (err) {
     logger.error("boot", "Scheduler failed to start", err);
+  }
+
+  try {
+    const { getClient } = await import("@/server/integrations/discord/client");
+    const client = getClient();
+    if (client) {
+      const { registerLevelingEvents } = await import("@/server/features/leveling/events");
+      registerLevelingEvents(client);
+    }
+  } catch (err) {
+    logger.error("boot", "Leveling events failed to register", err);
   }
 }

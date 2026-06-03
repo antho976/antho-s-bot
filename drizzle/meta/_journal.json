@@ -15,6 +15,13 @@
       "when": 1780454438880,
       "tag": "0001_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780497309149,
+      "tag": "0002_leveling",
+      "breakpoints": true
     }
   ]
 }

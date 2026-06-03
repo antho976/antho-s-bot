@@ -19,6 +19,7 @@ These are markdown text files — read them in order.
 | `07-scope-headroom.md` | Where we design *seams* for bigger scope (more platforms, identity, storage…) without building it yet |
 | `08-analytics.md` | Analytics/tracking prep — instrument from day one, build the charts later |
 | `09-project-structure.md` | The extensive directory architecture (layer-first, per-feature template) modeled on the Forge gym-app |
+| `10-polish-backlog.md` | Deferred "make it pretty & feature-packed" work (logic first, polish later) |
 
 ## Status
 
