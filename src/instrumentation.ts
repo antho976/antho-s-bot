@@ -25,4 +25,13 @@ export async function register(): Promise<void> {
   } catch (err) {
     logger.error("boot", "Bot failed to start", err);
   }
+
+  try {
+    const { startScheduler, onTick } = await import("@/server/core/scheduler");
+    const { checkReminders } = await import("@/server/features/notifications/reminders");
+    onTick("stream-reminders", checkReminders);
+    startScheduler();
+  } catch (err) {
+    logger.error("boot", "Scheduler failed to start", err);
+  }
 }

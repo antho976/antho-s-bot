@@ -1,12 +1,17 @@
 import { env } from "@/env";
 import { listChannels } from "@/server/features/notifications/queries";
+import { listSchedule } from "@/server/features/notifications/schedule-queries";
 import { NotificationsManager } from "./components/notifications-manager";
+import { ScheduleManager } from "./components/schedule-manager";
 
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
   const guildId = env.DISCORD_GUILD_ID ?? "default";
-  const channels = await listChannels(guildId);
+  const [channels, schedule] = await Promise.all([
+    listChannels(guildId),
+    listSchedule(guildId),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -16,6 +21,7 @@ export default async function NotificationsPage() {
         buttons to preview an alert in your Discord — no going live required.
       </p>
       <NotificationsManager initial={channels} />
+      <ScheduleManager initial={schedule} channels={channels} />
     </div>
   );
 }

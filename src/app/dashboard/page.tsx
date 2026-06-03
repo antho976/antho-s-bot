@@ -1,4 +1,5 @@
 import { getHealth } from "@/server/core/health";
+import { MaintenanceActions } from "./_components/maintenance-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function OverviewPage() {
     <div className="mx-auto max-w-5xl">
       <h1 className="text-2xl font-semibold">Overview</h1>
       <p className="mt-1 text-sm text-neutral-400">
-        Phase 0 — the skeleton is live. Features arrive in later phases.
+        Stream notifications are live. Manage channels &amp; schedule under Notifications.
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -55,13 +56,14 @@ export default async function OverviewPage() {
         ))}
       </div>
 
+      <MaintenanceActions />
+
       <div className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
         <h2 className="text-sm font-semibold text-neutral-200">What&apos;s next</h2>
         <ul className="mt-3 space-y-2 text-sm text-neutral-400">
-          <li>• Phase 1 — Twitch &amp; YouTube notifications + stream reminders</li>
+          <li>• Phase 1 — connect real Twitch/YouTube (add API keys) to go live-automatic</li>
           <li>• Phase 2 — Welcome artwork &amp; leveling</li>
           <li>• Phase 3 — Auto-mod, member logs, support tickets</li>
-          <li>• Quick actions (VIPs, fake live/end) land with Phase 1</li>
         </ul>
       </div>
     </div>

@@ -18,6 +18,12 @@ const schema = z.object({
   AUTH_SECRET: z.string().optional(),
   PUBLIC_BASE_URL: z.string().default("http://localhost:3000"),
 
+  // Notification providers — optional; filled in when wiring real Twitch/YouTube (Phase 1 creds).
+  TWITCH_CLIENT_ID: z.string().optional(),
+  TWITCH_CLIENT_SECRET: z.string().optional(),
+  TWITCH_EVENTSUB_SECRET: z.string().optional(),
+  YOUTUBE_API_KEY: z.string().optional(),
+
   LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(14),
 });
 

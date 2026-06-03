@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/server/db";
 import { streamChannels, streamEvents, streamState } from "@/server/db/schema";
 
@@ -15,6 +15,26 @@ export async function getChannel(id: number): Promise<StreamChannel | null> {
     .select()
     .from(streamChannels)
     .where(eq(streamChannels.id, id))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Look up a watched channel by its platform handle/id — used by inbound webhooks. */
+export async function getChannelByRef(
+  guildId: string,
+  platform: string,
+  channelRef: string,
+): Promise<StreamChannel | null> {
+  const rows = await db
+    .select()
+    .from(streamChannels)
+    .where(
+      and(
+        eq(streamChannels.guildId, guildId),
+        eq(streamChannels.platform, platform),
+        eq(streamChannels.channelRef, channelRef),
+      ),
+    )
     .limit(1);
   return rows[0] ?? null;
 }
@@ -62,4 +82,19 @@ export async function upsertState(channelId: number, patch: StatePatch): Promise
       target: streamState.channelId,
       set: { ...patch, updatedAt: new Date() },
     });
+}
+
+/** Clear stuck "is live" flags for all of a guild's channels. Returns how many channels. */
+export async function resetLiveStates(guildId: string): Promise<number> {
+  const rows = await db
+    .select({ id: streamChannels.id })
+    .from(streamChannels)
+    .where(eq(streamChannels.guildId, guildId));
+  const ids = rows.map((r) => r.id);
+  if (ids.length === 0) return 0;
+  await db
+    .update(streamState)
+    .set({ isLive: false, updatedAt: new Date() })
+    .where(inArray(streamState.channelId, ids));
+  return ids.length;
 }
