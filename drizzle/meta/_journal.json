@@ -71,6 +71,34 @@
       "when": 1780503444441,
       "tag": "0009_custom_commands",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1780504676508,
+      "tag": "0010_giveaways",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1780504946570,
+      "tag": "0011_polls",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1780505173791,
+      "tag": "0012_birthdays",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1780505363742,
+      "tag": "0013_pets",
+      "breakpoints": true
     }
   ]
 }

@@ -10,3 +10,7 @@ export * from "../../features/support/schema";
 export * from "../../features/reaction-roles/schema";
 export * from "../../features/starboard/schema";
 export * from "../../features/custom-commands/schema";
+export * from "../../features/giveaways/schema";
+export * from "../../features/polls/schema";
+export * from "../../features/birthdays/schema";
+export * from "../../features/pets/schema";

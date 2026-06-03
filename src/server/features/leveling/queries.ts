@@ -6,6 +6,16 @@ export type LevelRow = typeof levels.$inferSelect;
 export type LevelConfig = typeof levelConfig.$inferSelect;
 export type LevelReward = typeof levelRewards.$inferSelect;
 
+/** A member's current level (0 if they have none) — used for eligibility checks. */
+export async function getLevelValue(guildId: string, userId: string): Promise<number> {
+  const rows = await db
+    .select({ level: levels.level })
+    .from(levels)
+    .where(and(eq(levels.guildId, guildId), eq(levels.userId, userId)))
+    .limit(1);
+  return rows[0]?.level ?? 0;
+}
+
 /** Defaults used when a guild hasn't saved a config yet (mirrors the schema defaults). */
 export function defaultConfig(guildId: string): LevelConfig {
   return {

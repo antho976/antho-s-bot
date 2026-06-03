@@ -30,8 +30,14 @@ export async function register(): Promise<void> {
     const { startScheduler, onTick } = await import("@/server/core/scheduler");
     const { checkReminders } = await import("@/server/features/notifications/reminders");
     const { checkVoiceXp } = await import("@/server/features/leveling/voice-tick");
+    const { checkGiveaways } = await import("@/server/features/giveaways/service");
+    const { checkPolls } = await import("@/server/features/polls/service");
+    const { checkBirthdays } = await import("@/server/features/birthdays/service");
     onTick("stream-reminders", checkReminders);
     onTick("voice-xp", checkVoiceXp);
+    onTick("giveaways", checkGiveaways);
+    onTick("polls", checkPolls);
+    onTick("birthdays", checkBirthdays);
     startScheduler();
   } catch (err) {
     logger.error("boot", "Scheduler failed to start", err);
@@ -48,6 +54,8 @@ export async function register(): Promise<void> {
       const { registerReactionRoleEvents } = await import("@/server/features/reaction-roles/events");
       const { registerStarboardEvents } = await import("@/server/features/starboard/events");
       const { registerCustomCommandEvents } = await import("@/server/features/custom-commands/events");
+      const { registerGiveawayEvents } = await import("@/server/features/giveaways/events");
+      const { registerPollEvents } = await import("@/server/features/polls/events");
       registerLevelingEvents(client);
       registerWelcomeEvents(client);
       registerMemberLogEvents(client);
@@ -55,6 +63,8 @@ export async function register(): Promise<void> {
       registerReactionRoleEvents(client);
       registerStarboardEvents(client);
       registerCustomCommandEvents(client);
+      registerGiveawayEvents(client);
+      registerPollEvents(client);
     }
   } catch (err) {
     logger.error("boot", "Feature events failed to register", err);
