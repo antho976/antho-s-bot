@@ -29,6 +29,20 @@
       "when": 1780497903793,
       "tag": "0003_welcome",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1780500878274,
+      "tag": "0004_member_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1780501466713,
+      "tag": "0005_automod",
+      "breakpoints": true
     }
   ]
 }

@@ -8,6 +8,8 @@ const items = [
   { href: "/dashboard/notifications", label: "Notifications" },
   { href: "/dashboard/leveling", label: "Leveling" },
   { href: "/dashboard/welcome", label: "Welcome" },
+  { href: "/dashboard/member-logs", label: "Member Logs" },
+  { href: "/dashboard/automod", label: "Auto-mod" },
   { href: "/dashboard/health", label: "Bot Health" },
   { href: "/dashboard/logs", label: "Logs" },
 ];

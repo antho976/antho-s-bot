@@ -27,6 +27,7 @@ export function createBotClient(): Client {
       GatewayIntentBits.MessageContent, // privileged — enable in Dev Portal
       GatewayIntentBits.GuildVoiceStates,
       GatewayIntentBits.GuildMessageReactions,
+      GatewayIntentBits.GuildModeration, // ban/unban logs
     ],
     partials: [
       Partials.Message,
