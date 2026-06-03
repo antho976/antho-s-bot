@@ -45,10 +45,16 @@ export async function register(): Promise<void> {
       const { registerWelcomeEvents } = await import("@/server/features/welcome/events");
       const { registerMemberLogEvents } = await import("@/server/features/member-logs/events");
       const { registerAutomodEvents } = await import("@/server/features/automod/events");
+      const { registerReactionRoleEvents } = await import("@/server/features/reaction-roles/events");
+      const { registerStarboardEvents } = await import("@/server/features/starboard/events");
+      const { registerCustomCommandEvents } = await import("@/server/features/custom-commands/events");
       registerLevelingEvents(client);
       registerWelcomeEvents(client);
       registerMemberLogEvents(client);
       registerAutomodEvents(client);
+      registerReactionRoleEvents(client);
+      registerStarboardEvents(client);
+      registerCustomCommandEvents(client);
     }
   } catch (err) {
     logger.error("boot", "Feature events failed to register", err);
