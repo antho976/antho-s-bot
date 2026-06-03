@@ -1,0 +1,29 @@
+# Render Blueprint — one always-on web service running the Docker image,
+# with a persistent disk for the SQLite file (planning/02-hosting-cost.md, Path A).
+services:
+  - type: web
+    name: anthos-bot
+    runtime: docker
+    plan: starter # ~$7/mo, always-on (free tier sleeps — bad for a bot)
+    healthCheckPath: /
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: file:/data/bot.db # lives on the persistent disk
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: PUBLIC_BASE_URL
+        sync: false # set to your Render URL after first deploy
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      - key: LOG_RETENTION_DAYS
+        value: "14"

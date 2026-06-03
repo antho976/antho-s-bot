@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.env
+.env.*
+data
+planning
+.claude
+.codegraph
+npm-debug.log*
+*.md
