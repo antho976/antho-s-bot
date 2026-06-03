@@ -3,9 +3,11 @@
 import { useState } from "react";
 import type { ScheduleEntry } from "@/server/features/notifications/schedule-queries";
 import type { StreamChannel } from "@/server/features/notifications/queries";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { Toggle } from "@/app/dashboard/_components/ui/toggle";
 
 const inputCls =
-  "rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+  "rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40";
 
 export function ScheduleManager({
   initial,
@@ -73,25 +75,18 @@ export function ScheduleManager({
   return (
     <section className="mt-10">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Upcoming streams</h2>
-        {!adding && (
-          <button
-            onClick={() => setAdding(true)}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
-          >
-            + Add
-          </button>
-        )}
+        <h2 className="text-lg font-semibold text-text">Upcoming streams</h2>
+        {!adding && <Button onClick={() => setAdding(true)}>+ Add</Button>}
       </div>
-      <p className="mt-1 text-sm text-neutral-400">
-        Set a date/time and we&apos;ll post a reminder 1 hour and 10 minutes before (to the
-        chosen channel&apos;s Discord channel).
+      <p className="mt-1 text-sm text-muted">
+        Set a date/time and we&apos;ll post a reminder 1 hour and 10 minutes before (to the chosen
+        channel&apos;s Discord channel).
       </p>
 
       {adding && (
-        <div className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-indigo-900/60 bg-neutral-900 p-4">
+        <div className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface-1 p-4">
           <label className="text-sm">
-            <span className="block text-neutral-400">Channel</span>
+            <span className="block text-muted">Channel</span>
             <select className={inputCls} value={channelId} onChange={(e) => setChannelId(e.target.value)}>
               <option value="">— none —</option>
               {channels.map((c) => (
@@ -102,51 +97,57 @@ export function ScheduleManager({
             </select>
           </label>
           <label className="text-sm">
-            <span className="block text-neutral-400">Title</span>
-            <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Stream title" />
+            <span className="block text-muted">Title</span>
+            <input
+              className={inputCls}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Stream title"
+            />
           </label>
           <label className="text-sm">
-            <span className="block text-neutral-400">Starts at</span>
-            <input type="datetime-local" className={inputCls} value={when} onChange={(e) => setWhen(e.target.value)} />
+            <span className="block text-muted">Starts at</span>
+            <input
+              type="datetime-local"
+              className={inputCls}
+              value={when}
+              onChange={(e) => setWhen(e.target.value)}
+            />
           </label>
-          <label className="inline-flex items-center gap-1.5 text-sm text-neutral-300">
-            <input type="checkbox" checked={r1h} onChange={(e) => setR1h(e.target.checked)} className="h-4 w-4 accent-indigo-600" /> 1h
-          </label>
-          <label className="inline-flex items-center gap-1.5 text-sm text-neutral-300">
-            <input type="checkbox" checked={r10m} onChange={(e) => setR10m(e.target.checked)} className="h-4 w-4 accent-indigo-600" /> 10m
-          </label>
+          <Toggle checked={r1h} onChange={setR1h} label="1h" />
+          <Toggle checked={r10m} onChange={setR10m} label="10m" />
           <div className="flex gap-2">
-            <button onClick={add} disabled={busy || !when} className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Add</button>
-            <button onClick={() => setAdding(false)} className="rounded-md border border-neutral-700 px-3 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800">Cancel</button>
+            <Button onClick={add} disabled={busy || !when}>
+              Add
+            </Button>
+            <Button variant="secondary" onClick={() => setAdding(false)}>
+              Cancel
+            </Button>
           </div>
         </div>
       )}
 
       <div className="mt-3 space-y-2">
         {entries.length === 0 && (
-          <p className="text-sm text-neutral-500">No upcoming streams scheduled.</p>
+          <p className="text-sm text-faint">No upcoming streams scheduled.</p>
         )}
         {entries.map((e) => (
           <div
             key={e.id}
-            className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm"
+            className="flex items-center justify-between rounded-lg border border-border bg-surface-1 px-4 py-2 text-sm"
           >
             <div>
-              <span className="font-medium">{e.title || "Stream"}</span>
-              <span className="ml-2 text-neutral-400">{new Date(e.startsAt).toLocaleString()}</span>
-              <span className="ml-2 text-xs text-neutral-500">
+              <span className="font-medium text-text">{e.title || "Stream"}</span>
+              <span className="ml-2 text-muted">{new Date(e.startsAt).toLocaleString()}</span>
+              <span className="ml-2 text-xs text-faint">
                 {channelLabel(e.channelId)}
                 {(e.remind1h || e.remind10m) &&
                   ` · remind ${[e.remind1h && "1h", e.remind10m && "10m"].filter(Boolean).join(" + ")}`}
               </span>
             </div>
-            <button
-              onClick={() => remove(e.id)}
-              disabled={busy}
-              className="rounded-md border border-red-900 px-2.5 py-1 text-xs text-red-400 hover:bg-red-950"
-            >
+            <Button variant="danger" size="sm" onClick={() => remove(e.id)} disabled={busy}>
               Delete
-            </button>
+            </Button>
           </div>
         ))}
       </div>

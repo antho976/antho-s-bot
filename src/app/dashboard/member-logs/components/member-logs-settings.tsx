@@ -3,6 +3,11 @@
 import { useState } from "react";
 import type { MemberLogConfig } from "@/server/features/member-logs/queries";
 import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { Toggle } from "@/app/dashboard/_components/ui/toggle";
+import { Field } from "@/app/dashboard/_components/ui/input";
+import { useToast } from "@/app/dashboard/_components/ui/toast";
 
 const TOGGLES: { key: keyof MemberLogConfig; label: string }[] = [
   { key: "logJoins", label: "Joins" },
@@ -19,7 +24,7 @@ const TOGGLES: { key: keyof MemberLogConfig; label: string }[] = [
 export function MemberLogsSettings({ initial }: { initial: MemberLogConfig }) {
   const [c, setC] = useState<MemberLogConfig>(initial);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { success, error } = useToast();
 
   function set<K extends keyof MemberLogConfig>(k: K, v: MemberLogConfig[K]) {
     setC((p) => ({ ...p, [k]: v }));
@@ -45,56 +50,38 @@ export function MemberLogsSettings({ initial }: { initial: MemberLogConfig }) {
           logVoice: c.logVoice,
         }),
       });
-      setMsg(res.ok ? "Saved." : "Could not save.");
+      if (res.ok) success("Saved.");
+      else error("Could not save.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section className="mt-6 space-y-4">
-      {msg && <div className="text-sm text-emerald-400">{msg}</div>}
-      <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
-        <label className="inline-flex items-center gap-2 text-sm text-neutral-300">
-          <input
-            type="checkbox"
-            checked={c.enabled}
-            onChange={(e) => set("enabled", e.target.checked)}
-            className="h-4 w-4 accent-indigo-600"
-          />
-          Member logging enabled
-        </label>
+    <Card className="mt-6 space-y-4 p-5">
+      <Toggle checked={c.enabled} onChange={(v) => set("enabled", v)} label="Member logging enabled" />
 
-        <label className="block text-sm">
-          <span className="text-neutral-400">Log channel</span>
-          <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
-        </label>
+      <Field label="Log channel">
+        <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
+      </Field>
 
-        <div>
-          <div className="mb-2 text-sm text-neutral-400">Events to log</div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {TOGGLES.map((t) => (
-              <label key={t.key} className="inline-flex items-center gap-2 text-sm text-neutral-300">
-                <input
-                  type="checkbox"
-                  checked={Boolean(c[t.key])}
-                  onChange={(e) => set(t.key, e.target.checked as MemberLogConfig[typeof t.key])}
-                  className="h-4 w-4 accent-indigo-600"
-                />
-                {t.label}
-              </label>
-            ))}
-          </div>
+      <div>
+        <div className="mb-2 text-sm text-muted">Events to log</div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {TOGGLES.map((t) => (
+            <Toggle
+              key={t.key}
+              checked={Boolean(c[t.key])}
+              onChange={(v) => set(t.key, v as MemberLogConfig[typeof t.key])}
+              label={t.label}
+            />
+          ))}
         </div>
-
-        <button
-          onClick={save}
-          disabled={busy}
-          className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
-          Save settings
-        </button>
       </div>
-    </section>
+
+      <Button onClick={save} disabled={busy}>
+        Save settings
+      </Button>
+    </Card>
   );
 }

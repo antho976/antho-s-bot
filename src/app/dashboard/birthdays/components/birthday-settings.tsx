@@ -3,11 +3,16 @@
 import { useState } from "react";
 import type { BirthdayConfig } from "@/server/features/birthdays/queries";
 import { ChannelSelect, RoleSelect } from "@/app/dashboard/_components/guild-select";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { Toggle } from "@/app/dashboard/_components/ui/toggle";
+import { Field } from "@/app/dashboard/_components/ui/input";
+import { useToast } from "@/app/dashboard/_components/ui/toast";
 
 export function BirthdaySettings({ initial }: { initial: BirthdayConfig }) {
   const [c, setC] = useState<BirthdayConfig>(initial);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { success, error } = useToast();
 
   function set<K extends keyof BirthdayConfig>(k: K, v: BirthdayConfig[K]) {
     setC((p) => ({ ...p, [k]: v }));
@@ -25,44 +30,34 @@ export function BirthdaySettings({ initial }: { initial: BirthdayConfig }) {
           roleId: c.roleId || null,
         }),
       });
-      setMsg(res.ok ? "Saved." : "Could not save.");
+      if (res.ok) success("Saved.");
+      else error("Could not save.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section className="mt-6 space-y-4">
-      {msg && <div className="text-sm text-emerald-400">{msg}</div>}
-      <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
-        <label className="flex items-center gap-2 text-sm text-neutral-300">
-          <input
-            type="checkbox"
-            checked={c.enabled}
-            onChange={(e) => set("enabled", e.target.checked)}
-            className="h-4 w-4 accent-indigo-600"
-          />
-          Birthday announcements enabled
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm">
-            <span className="block text-neutral-400">Announce channel</span>
-            <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
-          </label>
-          <label className="text-sm">
-            <span className="block text-neutral-400">Birthday role (optional, for the day)</span>
-            <RoleSelect value={c.roleId ?? ""} onChange={(v) => set("roleId", v || null)} />
-          </label>
-        </div>
-        <p className="text-xs text-neutral-500">Members set theirs with <code>/birthday set</code>.</p>
-        <button
-          onClick={save}
-          disabled={busy}
-          className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
-          Save settings
-        </button>
+    <Card className="mt-6 space-y-4 p-5">
+      <Toggle
+        checked={c.enabled}
+        onChange={(v) => set("enabled", v)}
+        label="Birthday announcements enabled"
+      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Announce channel">
+          <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
+        </Field>
+        <Field label="Birthday role (optional, for the day)">
+          <RoleSelect value={c.roleId ?? ""} onChange={(v) => set("roleId", v || null)} />
+        </Field>
       </div>
-    </section>
+      <p className="text-xs text-faint">
+        Members set theirs with <code>/birthday set</code>.
+      </p>
+      <Button onClick={save} disabled={busy}>
+        Save settings
+      </Button>
+    </Card>
   );
 }

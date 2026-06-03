@@ -21,7 +21,7 @@ export default function GeneralPage() {
               key={c.name}
               className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-sm"
             >
-              <span className="font-mono text-indigo-400">/{c.name}</span>
+              <span className="font-mono text-accent">/{c.name}</span>
               <span className="ml-2 text-neutral-400">{c.description}</span>
             </div>
           ))}
@@ -36,7 +36,7 @@ export default function GeneralPage() {
         <p className="mt-1 text-sm text-neutral-400">Download your configuration + content as JSON.</p>
         <a
           href="/api/export"
-          className="mt-2 inline-block rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+          className="mt-2 inline-block rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-contrast transition hover:bg-accent-strong"
         >
           Export JSON
         </a>

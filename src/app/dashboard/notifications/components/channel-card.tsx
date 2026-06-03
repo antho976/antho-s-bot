@@ -1,6 +1,8 @@
 "use client";
 
 import type { StreamChannel } from "@/server/features/notifications/queries";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
 
 export type EventType = "live" | "end" | "upload";
 
@@ -20,53 +22,45 @@ export function ChannelCard({
   const badge = ch.platform === "twitch" ? "bg-purple-600" : "bg-red-600";
 
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+    <Card className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className={`rounded px-1.5 py-0.5 text-xs font-medium text-white ${badge}`}>
             {ch.platform}
           </span>
-          <span className="font-medium">{ch.displayName || ch.channelRef}</span>
-          <span className="text-xs text-neutral-500">{ch.channelRef}</span>
+          <span className="font-medium text-text">{ch.displayName || ch.channelRef}</span>
+          <span className="text-xs text-faint">{ch.channelRef}</span>
           {!ch.enabled && <span className="text-xs text-amber-400">disabled</span>}
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={onEdit}
-            disabled={busy}
-            className="rounded-md border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
-          >
+          <Button variant="secondary" size="sm" onClick={onEdit} disabled={busy}>
             Edit
-          </button>
-          <button
-            onClick={onDelete}
-            disabled={busy}
-            className="rounded-md border border-red-900 px-2.5 py-1 text-xs text-red-400 hover:bg-red-950"
-          >
+          </Button>
+          <Button variant="danger" size="sm" onClick={onDelete} disabled={busy}>
             Delete
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="mt-2 text-xs text-neutral-500">
+      <div className="mt-2 text-xs text-faint">
         Posts to {ch.discordChannelId ? `channel ${ch.discordChannelId}` : "— (no channel set)"} ·
         live {ch.alertOnLive ? "on" : "off"} · end {ch.alertOnEnd ? "on" : "off"} · upload{" "}
         {ch.alertOnUpload ? "on" : "off"}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="self-center text-xs text-neutral-500">Test:</span>
+        <span className="self-center text-xs text-faint">Test:</span>
         {(["live", "end", "upload"] as const).map((t) => (
           <button
             key={t}
             onClick={() => onTest(t)}
             disabled={busy}
-            className="rounded-md bg-neutral-800 px-2.5 py-1 text-xs capitalize hover:bg-neutral-700 disabled:opacity-50"
+            className="rounded-md bg-surface-2 px-2.5 py-1 text-xs capitalize text-text transition hover:bg-border-strong active:scale-[0.98] disabled:opacity-50"
           >
             Fake {t}
           </button>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }

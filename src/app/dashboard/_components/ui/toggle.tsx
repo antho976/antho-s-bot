@@ -34,7 +34,7 @@ export function Toggle({
   );
   if (!label) return sw;
   return (
-    <span className="inline-flex items-center gap-2 text-sm text-muted">
+    <span className="flex w-fit items-center gap-2 text-sm text-muted">
       {sw}
       {label}
     </span>

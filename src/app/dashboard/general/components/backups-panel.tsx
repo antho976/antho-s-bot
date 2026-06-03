@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { BackupInfo } from "@/server/features/backups/service";
 import { formatBytes } from "@/lib/format";
+import { Button } from "@/app/dashboard/_components/ui/button";
 
 export function BackupsPanel({ initial }: { initial: BackupInfo[] }) {
   const [items, setItems] = useState<BackupInfo[]>(initial);
@@ -20,27 +21,23 @@ export function BackupsPanel({ initial }: { initial: BackupInfo[] }) {
 
   return (
     <div className="mt-2">
-      <button
-        onClick={backup}
-        disabled={busy}
-        className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-      >
+      <Button onClick={backup} disabled={busy}>
         {busy ? "Backing up…" : "Backup now"}
-      </button>
+      </Button>
 
       <div className="mt-3 space-y-1.5">
-        {items.length === 0 && <p className="text-sm text-neutral-500">No backups yet.</p>}
+        {items.length === 0 && <p className="text-sm text-faint">No backups yet.</p>}
         {items.map((b) => (
           <div
             key={b.name}
-            className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-sm"
+            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-1 px-3 py-1.5 text-sm"
           >
-            <span className="truncate text-neutral-300">{b.name}</span>
+            <span className="truncate text-muted">{b.name}</span>
             <div className="flex shrink-0 items-center gap-3">
-              <span className="text-xs text-neutral-500">{formatBytes(b.size)}</span>
+              <span className="text-xs text-faint">{formatBytes(b.size)}</span>
               <a
                 href={`/api/backups/${encodeURIComponent(b.name)}`}
-                className="text-xs text-indigo-400 hover:text-indigo-300"
+                className="text-xs text-accent transition hover:opacity-80"
               >
                 Download
               </a>

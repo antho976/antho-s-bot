@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import type { CustomCommand } from "@/server/features/custom-commands/queries";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { useToast } from "@/app/dashboard/_components/ui/toast";
+import { useConfirm } from "@/app/dashboard/_components/ui/confirm";
 import { CommandForm, type CommandFormValues } from "./command-form";
 
 function splitIds(s: string): string[] {
@@ -15,12 +19,8 @@ export function CustomCommandsManager({ initial }: { initial: CustomCommand[] })
   const [commands, setCommands] = useState<CustomCommand[]>(initial);
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-
-  function flash(m: string) {
-    setToast(m);
-    setTimeout(() => setToast(null), 4000);
-  }
+  const { success, error } = useToast();
+  const confirm = useConfirm();
 
   function body(v: CommandFormValues) {
     return {
@@ -45,12 +45,12 @@ export function CustomCommandsManager({ initial }: { initial: CustomCommand[] })
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        flash(typeof data?.error === "string" ? data.error : "Could not create.");
+        error(typeof data?.error === "string" ? data.error : "Could not create.");
         return;
       }
       setCommands((c) => [...c, data as CustomCommand]);
       setEditing(null);
-      flash("Created.");
+      success("Created.");
     } finally {
       setBusy(false);
     }
@@ -66,19 +66,21 @@ export function CustomCommandsManager({ initial }: { initial: CustomCommand[] })
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        flash("Could not save.");
+        error("Could not save.");
         return;
       }
       setCommands((c) => c.map((x) => (x.id === id ? (data as CustomCommand) : x)));
       setEditing(null);
-      flash("Saved.");
+      success("Saved.");
     } finally {
       setBusy(false);
     }
   }
 
   async function remove(id: number) {
-    if (!window.confirm("Delete this command?")) return;
+    if (!(await confirm({ message: "Delete this command?", confirmLabel: "Delete", danger: true }))) {
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch(`/api/custom-commands/${id}`, { method: "DELETE" });
@@ -90,23 +92,14 @@ export function CustomCommandsManager({ initial }: { initial: CustomCommand[] })
 
   return (
     <div className="mt-6 space-y-4">
-      {toast && (
-        <div className="rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm">{toast}</div>
-      )}
-
       {editing === "new" ? (
         <CommandForm onSave={create} onCancel={() => setEditing(null)} busy={busy} />
       ) : (
-        <button
-          onClick={() => setEditing("new")}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-        >
-          + New command
-        </button>
+        <Button onClick={() => setEditing("new")}>+ New command</Button>
       )}
 
       {commands.length === 0 && editing !== "new" && (
-        <p className="text-sm text-neutral-500">No commands yet.</p>
+        <p className="text-sm text-faint">No commands yet.</p>
       )}
 
       <div className="space-y-3">
@@ -120,11 +113,11 @@ export function CustomCommandsManager({ initial }: { initial: CustomCommand[] })
               busy={busy}
             />
           ) : (
-            <div key={cmd.id} className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+            <Card key={cmd.id} className="p-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <span className="font-mono font-medium text-indigo-400">!{cmd.name}</span>
-                  <span className="ml-2 text-xs text-neutral-500">
+                  <span className="font-mono font-medium text-accent">!{cmd.name}</span>
+                  <span className="ml-2 text-xs text-faint">
                     used {cmd.usesCount}
                     {cmd.maxUses > 0 ? `/${cmd.maxUses}` : ""}
                     {cmd.cooldownSec > 0 ? ` · ${cmd.cooldownSec}s cd` : ""}
@@ -132,26 +125,18 @@ export function CustomCommandsManager({ initial }: { initial: CustomCommand[] })
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditing(cmd.id)}
-                    disabled={busy}
-                    className="rounded-md border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => setEditing(cmd.id)} disabled={busy}>
                     Edit
-                  </button>
-                  <button
-                    onClick={() => remove(cmd.id)}
-                    disabled={busy}
-                    className="rounded-md border border-red-900 px-2.5 py-1 text-xs text-red-400 hover:bg-red-950"
-                  >
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => remove(cmd.id)} disabled={busy}>
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
               {cmd.responseText && (
-                <div className="mt-2 truncate text-sm text-neutral-400">{cmd.responseText}</div>
+                <div className="mt-2 truncate text-sm text-muted">{cmd.responseText}</div>
               )}
-            </div>
+            </Card>
           ),
         )}
       </div>

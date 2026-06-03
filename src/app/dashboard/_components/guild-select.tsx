@@ -42,7 +42,7 @@ function useGuildOptions(): GuildOptions | null {
 }
 
 const selectCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+  "w-full rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40";
 
 function Picker({
   value,
@@ -138,28 +138,28 @@ function MultiPicker({
     onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
   const unknown = loaded ? value.filter((id) => !options.some((o) => o.id === id)) : [];
   return (
-    <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-neutral-700 bg-neutral-950 p-2">
-      {!loaded && <div className="text-xs text-neutral-500">Loading…</div>}
-      {loaded && options.length === 0 && <div className="text-xs text-neutral-500">{empty}</div>}
+    <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border-strong bg-surface-0 p-2">
+      {!loaded && <div className="text-xs text-faint">Loading…</div>}
+      {loaded && options.length === 0 && <div className="text-xs text-faint">{empty}</div>}
       {options.map((o) => (
-        <label key={o.id} className="flex items-center gap-2 text-sm text-neutral-200">
+        <label key={o.id} className="flex items-center gap-2 text-sm text-text">
           <input
             type="checkbox"
             checked={value.includes(o.id)}
             onChange={() => toggle(o.id)}
-            className="h-4 w-4 accent-indigo-600"
+            className="h-4 w-4 accent-[var(--accent)]"
           />
           {prefix}
           {o.name}
         </label>
       ))}
       {unknown.map((id) => (
-        <label key={id} className="flex items-center gap-2 text-sm text-neutral-400">
+        <label key={id} className="flex items-center gap-2 text-sm text-muted">
           <input
             type="checkbox"
             checked
             onChange={() => toggle(id)}
-            className="h-4 w-4 accent-indigo-600"
+            className="h-4 w-4 accent-[var(--accent)]"
           />
           {prefix}
           {id} (unknown)

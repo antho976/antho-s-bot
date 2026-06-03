@@ -5,6 +5,8 @@ import { getAccent } from "@/server/core/settings";
 import { TopNav } from "./_components/top-nav";
 import { SideNav } from "./_components/side-nav";
 import { buttonClass } from "./_components/ui/button";
+import { ToastProvider } from "./_components/ui/toast";
+import { ConfirmProvider } from "./_components/ui/confirm";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await auth();
@@ -43,7 +45,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <SideNav />
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-8">
+          <ToastProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </ToastProvider>
+        </main>
       </div>
     </div>
   );

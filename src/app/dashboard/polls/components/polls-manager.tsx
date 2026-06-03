@@ -3,9 +3,11 @@
 import { useState } from "react";
 import type { Poll } from "@/server/features/polls/queries";
 import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
-
-const inputCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { Input, Field } from "@/app/dashboard/_components/ui/input";
+import { Toggle } from "@/app/dashboard/_components/ui/toggle";
+import { useToast } from "@/app/dashboard/_components/ui/toast";
 
 function optionCount(json: string): number {
   try {
@@ -19,7 +21,7 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
   const [items, setItems] = useState<Poll[]>(initial);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const { success, error } = useToast();
 
   const [channelId, setChannelId] = useState("");
   const [question, setQuestion] = useState("");
@@ -27,15 +29,10 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
   const [multi, setMulti] = useState(false);
   const [durationMin, setDurationMin] = useState(0);
 
-  function flash(m: string) {
-    setToast(m);
-    setTimeout(() => setToast(null), 4000);
-  }
-
   async function create() {
     const opts = options.map((o) => o.trim()).filter(Boolean);
     if (!channelId.trim() || !question.trim() || opts.length < 2) {
-      flash("Need a channel, a question, and 2+ options.");
+      error("Need a channel, a question, and 2+ options.");
       return;
     }
     setBusy(true);
@@ -53,14 +50,14 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        flash(typeof data?.error === "string" ? data.error : "Could not create.");
+        error(typeof data?.error === "string" ? data.error : "Could not create.");
         return;
       }
       setItems((i) => [data as Poll, ...i]);
       setCreating(false);
       setQuestion("");
       setOptions(["", ""]);
-      flash("Poll posted.");
+      success("Poll posted.");
     } finally {
       setBusy(false);
     }
@@ -83,29 +80,22 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
 
   return (
     <div className="mt-6 space-y-4">
-      {toast && (
-        <div className="rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm">{toast}</div>
-      )}
-
       {creating ? (
-        <div className="space-y-3 rounded-xl border border-indigo-900/60 bg-neutral-900 p-5">
+        <Card className="space-y-3 p-5">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">
-              <span className="block text-neutral-400">Question</span>
-              <input className={inputCls} value={question} onChange={(e) => setQuestion(e.target.value)} />
-            </label>
-            <label className="text-sm">
-              <span className="block text-neutral-400">Channel</span>
+            <Field label="Question">
+              <Input value={question} onChange={(e) => setQuestion(e.target.value)} />
+            </Field>
+            <Field label="Channel">
               <ChannelSelect value={channelId} onChange={setChannelId} />
-            </label>
+            </Field>
           </div>
 
           <div className="space-y-2">
-            <div className="text-sm text-neutral-400">Options (2–10)</div>
+            <div className="text-sm text-muted">Options (2–10)</div>
             {options.map((o, i) => (
               <div key={i} className="flex gap-2">
-                <input
-                  className={inputCls}
+                <Input
                   value={o}
                   onChange={(e) => setOptions((os) => os.map((x, idx) => (idx === i ? e.target.value : x)))}
                   placeholder={`Option ${i + 1}`}
@@ -113,7 +103,7 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
                 {options.length > 2 && (
                   <button
                     onClick={() => setOptions((os) => os.filter((_, idx) => idx !== i))}
-                    className="shrink-0 rounded-md border border-neutral-700 px-2 text-neutral-400 hover:bg-neutral-800"
+                    className="shrink-0 rounded-md border border-border-strong px-2 text-muted transition hover:bg-surface-2"
                   >
                     ✕
                   </button>
@@ -123,7 +113,7 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
             {options.length < 10 && (
               <button
                 onClick={() => setOptions((os) => [...os, ""])}
-                className="text-sm text-indigo-400 hover:text-indigo-300"
+                className="text-sm text-accent transition hover:opacity-80"
               >
                 + Add option
               </button>
@@ -131,15 +121,12 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            <label className="inline-flex items-center gap-2 text-sm text-neutral-300">
-              <input type="checkbox" checked={multi} onChange={(e) => setMulti(e.target.checked)} className="h-4 w-4 accent-indigo-600" />
-              Multiple choice
-            </label>
-            <label className="text-sm">
-              <span className="text-neutral-400">Duration (min, 0 = manual)</span>{" "}
+            <Toggle checked={multi} onChange={setMulti} label="Multiple choice" />
+            <label className="text-sm text-muted">
+              Duration (min, 0 = manual){" "}
               <input
                 type="number"
-                className="ml-1 w-24 rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                className="ml-1 w-24 rounded-md border border-border-strong bg-surface-0 px-2 py-1 text-sm text-text outline-none focus:border-accent"
                 value={durationMin}
                 onChange={(e) => setDurationMin(Number(e.target.value))}
               />
@@ -147,41 +134,39 @@ export function PollsManager({ initial }: { initial: Poll[] }) {
           </div>
 
           <div className="flex gap-2">
-            <button onClick={create} disabled={busy} className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+            <Button onClick={create} disabled={busy}>
               Post poll
-            </button>
-            <button onClick={() => setCreating(false)} className="rounded-md border border-neutral-700 px-4 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800">
+            </Button>
+            <Button variant="secondary" onClick={() => setCreating(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       ) : (
-        <button onClick={() => setCreating(true)} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
-          + New poll
-        </button>
+        <Button onClick={() => setCreating(true)}>+ New poll</Button>
       )}
 
-      {items.length === 0 && !creating && <p className="text-sm text-neutral-500">No polls yet.</p>}
+      {items.length === 0 && !creating && <p className="text-sm text-faint">No polls yet.</p>}
 
       <div className="space-y-3">
         {items.map((p) => (
-          <div key={p.id} className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+          <Card key={p.id} className="p-4">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <span className="font-medium">📊 {p.question}</span>
-                <span className="ml-2 text-xs text-neutral-500">
+                <span className="font-medium text-text">📊 {p.question}</span>
+                <span className="ml-2 text-xs text-faint">
                   {optionCount(p.optionsJson)} options
                   {p.multi ? " · multi" : ""} · {p.status}
                   {p.status === "active" && p.endsAt ? ` · ends ${new Date(p.endsAt).toLocaleString()}` : ""}
                 </span>
               </div>
               {p.status === "active" && (
-                <button onClick={() => end(p.id)} disabled={busy} className="rounded-md border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-800">
+                <Button variant="secondary" size="sm" onClick={() => end(p.id)} disabled={busy}>
                   End now
-                </button>
+                </Button>
               )}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

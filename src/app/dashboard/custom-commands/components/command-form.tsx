@@ -3,9 +3,10 @@
 import { useState } from "react";
 import type { CustomCommand } from "@/server/features/custom-commands/queries";
 import { ChannelMultiSelect, RoleMultiSelect } from "@/app/dashboard/_components/guild-select";
-
-const inputCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { Toggle } from "@/app/dashboard/_components/ui/toggle";
+import { Input, Textarea, Field } from "@/app/dashboard/_components/ui/input";
 
 const toList = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 const toStr = (a: string[]) => a.join(", ");
@@ -64,88 +65,59 @@ export function CommandForm({
     set(k, Number(e.target.value) as CommandFormValues[typeof k]);
 
   return (
-    <div className="space-y-3 rounded-xl border border-indigo-900/60 bg-neutral-900 p-5">
+    <Card className="space-y-3 p-5">
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-sm">
-          <span className="block text-neutral-400">Name (used as !name)</span>
-          <input
-            className={inputCls}
+        <Field label="Name (used as !name)">
+          <Input
             value={v.name}
             disabled={isEdit}
             onChange={(e) => set("name", e.target.value.replace(/[^a-z0-9_-]/gi, ""))}
             placeholder="welcome"
           />
-        </label>
-        <label className="text-sm">
-          <span className="block text-neutral-400">Image URL (optional)</span>
-          <input className={inputCls} value={v.imageUrl} onChange={(e) => set("imageUrl", e.target.value)} />
-        </label>
+        </Field>
+        <Field label="Image URL (optional)">
+          <Input value={v.imageUrl} onChange={(e) => set("imageUrl", e.target.value)} />
+        </Field>
       </div>
 
-      <label className="block text-sm">
-        <span className="text-neutral-400">Response text</span>
-        <textarea
-          className={inputCls}
-          rows={2}
-          value={v.responseText}
-          onChange={(e) => set("responseText", e.target.value)}
-        />
-      </label>
+      <Field label="Response text">
+        <Textarea rows={2} value={v.responseText} onChange={(e) => set("responseText", e.target.value)} />
+      </Field>
 
-      <label className="inline-flex items-center gap-2 text-sm text-neutral-300">
-        <input
-          type="checkbox"
-          checked={v.embed}
-          onChange={(e) => set("embed", e.target.checked)}
-          className="h-4 w-4 accent-indigo-600"
-        />
-        Send as embed
-      </label>
+      <Toggle checked={v.embed} onChange={(val) => set("embed", val)} label="Send as embed" />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="text-sm">
-          <span className="block text-neutral-400">Auto-delete (sec, 0=off)</span>
-          <input type="number" className={inputCls} value={v.autoDeleteSec} onChange={num("autoDeleteSec")} />
-        </label>
-        <label className="text-sm">
-          <span className="block text-neutral-400">Max uses (0=∞)</span>
-          <input type="number" className={inputCls} value={v.maxUses} onChange={num("maxUses")} />
-        </label>
-        <label className="text-sm">
-          <span className="block text-neutral-400">Cooldown (sec)</span>
-          <input type="number" className={inputCls} value={v.cooldownSec} onChange={num("cooldownSec")} />
-        </label>
+        <Field label="Auto-delete (sec, 0=off)">
+          <Input type="number" value={v.autoDeleteSec} onChange={num("autoDeleteSec")} />
+        </Field>
+        <Field label="Max uses (0=∞)">
+          <Input type="number" value={v.maxUses} onChange={num("maxUses")} />
+        </Field>
+        <Field label="Cooldown (sec)">
+          <Input type="number" value={v.cooldownSec} onChange={num("cooldownSec")} />
+        </Field>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-sm">
-          <span className="block text-neutral-400">Allowed roles (none checked = any)</span>
+        <Field label="Allowed roles (none checked = any)">
           <RoleMultiSelect value={toList(v.allowedRoles)} onChange={(a) => set("allowedRoles", toStr(a))} />
-        </label>
-        <label className="text-sm">
-          <span className="block text-neutral-400">Allowed channels (none checked = any)</span>
+        </Field>
+        <Field label="Allowed channels (none checked = any)">
           <ChannelMultiSelect
             value={toList(v.allowedChannels)}
             onChange={(a) => set("allowedChannels", toStr(a))}
           />
-        </label>
+        </Field>
       </div>
 
       <div className="flex gap-2">
-        <button
-          onClick={() => onSave(v)}
-          disabled={busy || !v.name.trim()}
-          className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
+        <Button onClick={() => onSave(v)} disabled={busy || !v.name.trim()}>
           {isEdit ? "Save changes" : "Create command"}
-        </button>
-        <button
-          onClick={onCancel}
-          className="rounded-md border border-neutral-700 px-4 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800"
-        >
+        </Button>
+        <Button variant="secondary" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

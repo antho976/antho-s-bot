@@ -3,14 +3,17 @@
 import { useState } from "react";
 import type { WelcomeConfig } from "@/server/features/welcome/queries";
 import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
-
-const inputCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { Toggle } from "@/app/dashboard/_components/ui/toggle";
+import { Select } from "@/app/dashboard/_components/ui/select";
+import { Textarea, Field } from "@/app/dashboard/_components/ui/input";
+import { useToast } from "@/app/dashboard/_components/ui/toast";
 
 export function WelcomeSettings({ initial }: { initial: WelcomeConfig }) {
   const [c, setC] = useState<WelcomeConfig>(initial);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { success, error } = useToast();
 
   function set<K extends keyof WelcomeConfig>(k: K, v: WelcomeConfig[K]) {
     setC((p) => ({ ...p, [k]: v }));
@@ -34,7 +37,8 @@ export function WelcomeSettings({ initial }: { initial: WelcomeConfig }) {
           randomBackground: c.randomBackground,
         }),
       });
-      setMsg(res.ok ? "Saved." : "Could not save.");
+      if (res.ok) success("Saved.");
+      else error("Could not save.");
     } finally {
       setBusy(false);
     }
@@ -42,8 +46,6 @@ export function WelcomeSettings({ initial }: { initial: WelcomeConfig }) {
 
   return (
     <section className="mt-6 space-y-6">
-      {msg && <div className="text-sm text-emerald-400">{msg}</div>}
-
       <Block
         title="Welcome"
         enabled={c.welcomeEnabled}
@@ -67,24 +69,16 @@ export function WelcomeSettings({ initial }: { initial: WelcomeConfig }) {
         onMessage={(v) => set("goodbyeMessage", v)}
       />
 
-      <label className="inline-flex items-center gap-2 text-sm text-neutral-300">
-        <input
-          type="checkbox"
-          checked={c.randomBackground}
-          onChange={(e) => set("randomBackground", e.target.checked)}
-          className="h-4 w-4 accent-indigo-600"
-        />
-        Pick a random background each time
-      </label>
+      <Toggle
+        checked={c.randomBackground}
+        onChange={(v) => set("randomBackground", v)}
+        label="Pick a random background each time"
+      />
 
       <div>
-        <button
-          onClick={save}
-          disabled={busy}
-          className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
+        <Button onClick={save} disabled={busy}>
           Save settings
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -112,44 +106,26 @@ function Block({
   onMessage: (v: string) => void;
 }) {
   return (
-    <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+    <Card className="space-y-3 p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <label className="inline-flex items-center gap-2 text-sm text-neutral-300">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => onEnabled(e.target.checked)}
-            className="h-4 w-4 accent-indigo-600"
-          />
-          Enabled
-        </label>
+        <h2 className="text-lg font-semibold text-text">{title}</h2>
+        <Toggle checked={enabled} onChange={onEnabled} label="Enabled" />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-sm">
-          <span className="block text-neutral-400">Channel</span>
+        <Field label="Channel">
           <ChannelSelect value={channelId ?? ""} onChange={(v) => onChannel(v || null)} />
-        </label>
-        <label className="text-sm">
-          <span className="block text-neutral-400">Mode</span>
-          <select className={inputCls} value={mode} onChange={(e) => onMode(e.target.value)}>
+        </Field>
+        <Field label="Mode">
+          <Select value={mode} onChange={(e) => onMode(e.target.value)}>
             <option value="text">Text only</option>
             <option value="image">Image only</option>
             <option value="both">Text + image</option>
-          </select>
-        </label>
+          </Select>
+        </Field>
       </div>
-      <label className="block text-sm">
-        <span className="text-neutral-400">
-          Message — placeholders: {"{user} {username} {server} {memberCount}"}
-        </span>
-        <textarea
-          className={inputCls}
-          rows={2}
-          value={message}
-          onChange={(e) => onMessage(e.target.value)}
-        />
-      </label>
-    </div>
+      <Field label="Message — placeholders: {user} {username} {server} {memberCount}">
+        <Textarea rows={2} value={message} onChange={(e) => onMessage(e.target.value)} />
+      </Field>
+    </Card>
   );
 }

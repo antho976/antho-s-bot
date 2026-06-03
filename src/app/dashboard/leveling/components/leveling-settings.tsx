@@ -3,14 +3,17 @@
 import { useState } from "react";
 import type { LevelConfig } from "@/server/features/leveling/queries";
 import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
-
-const inputCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { Toggle } from "@/app/dashboard/_components/ui/toggle";
+import { Select } from "@/app/dashboard/_components/ui/select";
+import { Input, Field } from "@/app/dashboard/_components/ui/input";
+import { useToast } from "@/app/dashboard/_components/ui/toast";
 
 export function LevelingSettings({ initial }: { initial: LevelConfig }) {
   const [c, setC] = useState<LevelConfig>(initial);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { success, error } = useToast();
 
   function set<K extends keyof LevelConfig>(k: K, v: LevelConfig[K]) {
     setC((p) => ({ ...p, [k]: v }));
@@ -37,7 +40,8 @@ export function LevelingSettings({ initial }: { initial: LevelConfig }) {
           voiceRequireActive: c.voiceRequireActive,
         }),
       });
-      setMsg(res.ok ? "Saved." : "Could not save.");
+      if (res.ok) success("Saved.");
+      else error("Could not save.");
     } finally {
       setBusy(false);
     }
@@ -45,9 +49,8 @@ export function LevelingSettings({ initial }: { initial: LevelConfig }) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-lg font-semibold">Settings</h2>
-      {msg && <div className="mt-2 text-sm text-emerald-400">{msg}</div>}
-      <div className="mt-3 space-y-4 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+      <h2 className="text-lg font-semibold text-text">Settings</h2>
+      <Card className="mt-3 space-y-4 p-5">
         <Toggle label="Leveling enabled" checked={c.enabled} onChange={(v) => set("enabled", v)} />
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -64,35 +67,28 @@ export function LevelingSettings({ initial }: { initial: LevelConfig }) {
         />
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="text-sm">
-            <span className="block text-neutral-400">Curve type</span>
-            <select
-              className={inputCls}
-              value={c.curveType}
-              onChange={(e) => set("curveType", e.target.value)}
-            >
+          <Field label="Curve type">
+            <Select value={c.curveType} onChange={(e) => set("curveType", e.target.value)}>
               <option value="multiplier">Multiplier</option>
               <option value="custom">Custom</option>
-            </select>
-          </label>
+            </Select>
+          </Field>
           <Num label="Curve base XP" value={c.curveBase} onChange={(v) => set("curveBase", v)} />
           <Num label="Curve factor" value={c.curveFactor} step="0.05" onChange={(v) => set("curveFactor", v)} />
         </div>
 
         <Toggle label="Announce level-ups" checked={c.announce} onChange={(v) => set("announce", v)} />
-        <label className="block text-sm">
-          <span className="text-neutral-400">Announce channel (blank = where it happened)</span>
-          <ChannelSelect value={c.announceChannelId ?? ""} onChange={(v) => set("announceChannelId", v || null)} />
-        </label>
+        <Field label="Announce channel (blank = where it happened)">
+          <ChannelSelect
+            value={c.announceChannelId ?? ""}
+            onChange={(v) => set("announceChannelId", v || null)}
+          />
+        </Field>
 
-        <button
-          onClick={save}
-          disabled={busy}
-          className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
+        <Button onClick={save} disabled={busy}>
           Save settings
-        </button>
-      </div>
+        </Button>
+      </Card>
     </section>
   );
 }
@@ -109,37 +105,8 @@ function Num({
   step?: string;
 }) {
   return (
-    <label className="text-sm">
-      <span className="block text-neutral-400">{label}</span>
-      <input
-        type="number"
-        step={step}
-        className={inputCls}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-    </label>
-  );
-}
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="inline-flex items-center gap-2 text-sm text-neutral-300">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 accent-indigo-600"
-      />
-      {label}
-    </label>
+    <Field label={label}>
+      <Input type="number" step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </Field>
   );
 }

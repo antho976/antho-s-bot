@@ -3,6 +3,11 @@
 import { useState } from "react";
 import type { StreamChannel } from "@/server/features/notifications/queries";
 import { ChannelSelect, RoleSelect } from "@/app/dashboard/_components/guild-select";
+import { Card } from "@/app/dashboard/_components/ui/card";
+import { Button } from "@/app/dashboard/_components/ui/button";
+import { Toggle } from "@/app/dashboard/_components/ui/toggle";
+import { Select } from "@/app/dashboard/_components/ui/select";
+import { Input, Textarea, Field } from "@/app/dashboard/_components/ui/input";
 
 export interface ChannelFormValues {
   platform: "twitch" | "youtube";
@@ -16,9 +21,6 @@ export interface ChannelFormValues {
   alertOnUpload: boolean;
   messageTemplate: string;
 }
-
-const inputCls =
-  "w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500";
 
 function fromChannel(channel?: StreamChannel): ChannelFormValues {
   return {
@@ -54,100 +56,59 @@ export function ChannelForm({
   const refLabel = v.platform === "twitch" ? "Twitch username" : "YouTube channel ID";
 
   return (
-    <div className="space-y-3 rounded-xl border border-indigo-900/60 bg-neutral-900 p-5">
+    <Card className="space-y-3 p-5">
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm">
-          <span className="text-neutral-400">Platform</span>
-          <select
-            className={inputCls}
+        <Field label="Platform">
+          <Select
             value={v.platform}
             disabled={isEdit}
             onChange={(e) => set("platform", e.target.value as "twitch" | "youtube")}
           >
             <option value="twitch">Twitch</option>
             <option value="youtube">YouTube</option>
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="text-neutral-400">{refLabel}</span>
-          <input
-            className={inputCls}
+          </Select>
+        </Field>
+        <Field label={refLabel}>
+          <Input
             value={v.channelRef}
             onChange={(e) => set("channelRef", e.target.value)}
             placeholder={v.platform === "twitch" ? "e.g. ninja" : "e.g. UCxxxxxxxx"}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="text-neutral-400">Display name (optional)</span>
-          <input className={inputCls} value={v.displayName} onChange={(e) => set("displayName", e.target.value)} />
-        </label>
-        <label className="block text-sm">
-          <span className="text-neutral-400">Discord channel (where to post)</span>
+        </Field>
+        <Field label="Display name (optional)">
+          <Input value={v.displayName} onChange={(e) => set("displayName", e.target.value)} />
+        </Field>
+        <Field label="Discord channel (where to post)">
           <ChannelSelect value={v.discordChannelId} onChange={(val) => set("discordChannelId", val)} />
-        </label>
-        <label className="block text-sm">
-          <span className="text-neutral-400">Ping role (optional)</span>
+        </Field>
+        <Field label="Ping role (optional)">
           <RoleSelect value={v.pingRoleId} onChange={(val) => set("pingRoleId", val)} />
-        </label>
+        </Field>
       </div>
 
-      <div className="flex flex-wrap gap-4 text-sm text-neutral-300">
-        <Check label="Use embed" checked={v.useEmbed} onChange={(c) => set("useEmbed", c)} />
-        <Check label="Alert on live" checked={v.alertOnLive} onChange={(c) => set("alertOnLive", c)} />
-        <Check label="Alert on end" checked={v.alertOnEnd} onChange={(c) => set("alertOnEnd", c)} />
-        <Check label="Alert on upload" checked={v.alertOnUpload} onChange={(c) => set("alertOnUpload", c)} />
+      <div className="flex flex-wrap gap-4">
+        <Toggle checked={v.useEmbed} onChange={(c) => set("useEmbed", c)} label="Use embed" />
+        <Toggle checked={v.alertOnLive} onChange={(c) => set("alertOnLive", c)} label="Alert on live" />
+        <Toggle checked={v.alertOnEnd} onChange={(c) => set("alertOnEnd", c)} label="Alert on end" />
+        <Toggle checked={v.alertOnUpload} onChange={(c) => set("alertOnUpload", c)} label="Alert on upload" />
       </div>
 
-      <label className="block text-sm">
-        <span className="text-neutral-400">
-          Message template (optional) — placeholders: {"{name} {platform} {title} {game} {url}"}
-        </span>
-        <textarea
-          className={inputCls}
+      <Field label="Message template (optional) — placeholders: {name} {platform} {title} {game} {url}">
+        <Textarea
           rows={2}
           value={v.messageTemplate}
           onChange={(e) => set("messageTemplate", e.target.value)}
         />
-      </label>
+      </Field>
 
       <div className="flex gap-2">
-        <button
-          disabled={busy || !v.channelRef.trim()}
-          onClick={() => onSave(v)}
-          className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
+        <Button disabled={busy || !v.channelRef.trim()} onClick={() => onSave(v)}>
           {isEdit ? "Save changes" : "Add channel"}
-        </button>
-        <button
-          disabled={busy}
-          onClick={onCancel}
-          className="rounded-md border border-neutral-700 px-4 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800"
-        >
+        </Button>
+        <Button variant="secondary" disabled={busy} onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
-    </div>
-  );
-}
-
-function Check({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (c: boolean) => void;
-}) {
-  return (
-    <label className="inline-flex items-center gap-2">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 accent-indigo-600"
-      />
-      {label}
-    </label>
+    </Card>
   );
 }
