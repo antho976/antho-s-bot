@@ -7,3 +7,6 @@ export * from "../../features/welcome/schema";
 export * from "../../features/member-logs/schema";
 export * from "../../features/automod/schema";
 export * from "../../features/support/schema";
+export * from "../../features/reaction-roles/schema";
+export * from "../../features/starboard/schema";
+export * from "../../features/custom-commands/schema";

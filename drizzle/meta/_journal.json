@@ -50,6 +50,27 @@
       "when": 1780502182207,
       "tag": "0006_support",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1780503004054,
+      "tag": "0007_reaction_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1780503221435,
+      "tag": "0008_starboard",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1780503444441,
+      "tag": "0009_custom_commands",
+      "breakpoints": true
     }
   ]
 }
