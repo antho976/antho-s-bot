@@ -6,3 +6,4 @@ export * from "../../features/leveling/schema";
 export * from "../../features/welcome/schema";
 export * from "../../features/member-logs/schema";
 export * from "../../features/automod/schema";
+export * from "../../features/support/schema";

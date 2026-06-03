@@ -1,9 +1,9 @@
 import type { BotCommand } from "./types";
 import { ping } from "./ping";
+import { ticket } from "./ticket";
 
-// Static list for Phase 0. When the feature registry lands (Phase 1), feature modules
-// contribute their own commands here.
-export const commands: BotCommand[] = [ping];
+// Static command list. Feature commands are added here as features land.
+export const commands: BotCommand[] = [ping, ticket];
 
 export const commandMap = new Map<string, BotCommand>(
   commands.map((c) => [c.data.name, c]),

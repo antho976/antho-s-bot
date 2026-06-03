@@ -10,6 +10,7 @@ const items = [
   { href: "/dashboard/welcome", label: "Welcome" },
   { href: "/dashboard/member-logs", label: "Member Logs" },
   { href: "/dashboard/automod", label: "Auto-mod" },
+  { href: "/dashboard/support", label: "Support" },
   { href: "/dashboard/health", label: "Bot Health" },
   { href: "/dashboard/logs", label: "Logs" },
 ];
