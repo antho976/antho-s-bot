@@ -139,7 +139,18 @@ export const NAV: NavCategory[] = [
   },
   // Deferred-by-design (matches the roadmap): shown but not yet available.
   { key: "smartbot", label: "SmartBot", icon: Bot, soon: true, groups: [] },
-  { key: "rpg", label: "RPG", icon: Gamepad2, soon: true, groups: [] },
+  {
+    key: "rpg",
+    label: "RPG",
+    icon: Gamepad2,
+    groups: [
+      {
+        title: "Game",
+        color: "text-violet-400",
+        items: [{ href: "/dashboard/rpg", label: "Settings", icon: Gamepad2 }],
+      },
+    ],
+  },
 ];
 
 /** Which top category owns the current path (defaults to core). */

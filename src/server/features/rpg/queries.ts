@@ -43,12 +43,28 @@ export async function updatePlayer(id: number, patch: PlayerPatch): Promise<void
     .where(eq(rpgPlayers.id, id));
 }
 
-export type RpgConfig = { guildId: string; enabled: boolean; channelId: string | null };
+export type RpgConfig = typeof rpgConfig.$inferSelect;
+
+export function defaultRpgConfig(guildId: string): RpgConfig {
+  return { guildId, enabled: false, channelId: null, updatedAt: null };
+}
 
 export async function getRpgConfig(guildId: string): Promise<RpgConfig> {
   const rows = await db.select().from(rpgConfig).where(eq(rpgConfig.guildId, guildId)).limit(1);
-  const row = rows[0];
-  return row
-    ? { guildId: row.guildId, enabled: row.enabled, channelId: row.channelId }
-    : { guildId, enabled: false, channelId: null };
+  return rows[0] ?? defaultRpgConfig(guildId);
+}
+
+export async function saveRpgConfig(
+  guildId: string,
+  patch: Partial<typeof rpgConfig.$inferInsert>,
+): Promise<RpgConfig> {
+  const rows = await db
+    .insert(rpgConfig)
+    .values({ guildId, ...patch, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: rpgConfig.guildId,
+      set: { ...patch, updatedAt: new Date() },
+    })
+    .returning();
+  return rows[0];
 }
