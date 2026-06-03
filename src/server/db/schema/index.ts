@@ -3,3 +3,4 @@ export * from "./core";
 export * from "./analytics";
 export * from "../../features/notifications/schema";
 export * from "../../features/leveling/schema";
+export * from "../../features/welcome/schema";

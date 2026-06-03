@@ -42,9 +42,11 @@ export async function register(): Promise<void> {
     const client = getClient();
     if (client) {
       const { registerLevelingEvents } = await import("@/server/features/leveling/events");
+      const { registerWelcomeEvents } = await import("@/server/features/welcome/events");
       registerLevelingEvents(client);
+      registerWelcomeEvents(client);
     }
   } catch (err) {
-    logger.error("boot", "Leveling events failed to register", err);
+    logger.error("boot", "Feature events failed to register", err);
   }
 }

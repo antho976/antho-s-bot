@@ -5,6 +5,7 @@ One file per version. Versions track the build phases in
 
 | Version | Phase | What |
 |---------|-------|------|
+| [v2](v2.md) | Phase 2 | Welcome (artwork) & Leveling — XP/leaderboard/rewards, welcome/goodbye cards |
 | [v1](v1.md) | Phase 1 | Stream notifications — alert engine, schedule/reminders, maintenance, provider scaffolds |
 | [v0](v0.md) | Phase 0 | Foundation — deployable skeleton (bot bootstrap, dashboard, health, logs) |
 
