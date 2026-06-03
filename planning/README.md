@@ -20,6 +20,7 @@ These are markdown text files — read them in order.
 | `08-analytics.md` | Analytics/tracking prep — instrument from day one, build the charts later |
 | `09-project-structure.md` | The extensive directory architecture (layer-first, per-feature template) modeled on the Forge gym-app |
 | `10-polish-backlog.md` | Deferred "make it pretty & feature-packed" work (logic first, polish later) |
+| `11-rpg-design.md` | RPG v2 flow & seams (deferred feature) — public hub/router, combatant abstraction, `rpg_*`/`clan` schema |
 
 ## Status
 
