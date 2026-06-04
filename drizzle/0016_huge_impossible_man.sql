@@ -1,0 +1,1 @@
+ALTER TABLE `rpg_players` DROP COLUMN `energy`;

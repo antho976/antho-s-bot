@@ -5,9 +5,9 @@ import { updatePlayer, type RpgPlayer } from "./queries";
 /** Apply lazy regen on load and persist it if anything changed. Returns the up-to-date player. */
 export async function withRegen(player: RpgPlayer): Promise<RpgPlayer> {
   const r = applyRegen(player, classDef(player.classId), Date.now());
-  if (r.hp === player.hp && r.energy === player.energy) return player;
-  await updatePlayer(player.id, { hp: r.hp, energy: r.energy, lastRegenAt: r.lastRegenAt });
-  return { ...player, hp: r.hp, energy: r.energy, lastRegenAt: r.lastRegenAt };
+  if (r.hp === player.hp) return player;
+  await updatePlayer(player.id, { hp: r.hp, lastRegenAt: r.lastRegenAt });
+  return { ...player, hp: r.hp, lastRegenAt: r.lastRegenAt };
 }
 
 /**

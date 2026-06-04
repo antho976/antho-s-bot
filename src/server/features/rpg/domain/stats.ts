@@ -9,10 +9,6 @@ export function maxHp(cls: ClassDef, level: number): number {
   return cls.baseHp + cls.hpPerLevel * (level - 1);
 }
 
-export function maxEnergy(cls: ClassDef, level: number): number {
-  return cls.baseEnergy + cls.energyPerLevel * (level - 1);
-}
-
 /** XP needed to advance from `level` to `level + 1`. */
 export function xpForLevel(level: number): number {
   return Math.floor(RPG.xpBase * Math.pow(level, RPG.xpFactor));
@@ -28,13 +24,12 @@ export function xpBar(current: number, needed: number, width = 10): string {
 /** Inputs lazy regen needs from a player row. */
 export type Regenable = {
   hp: number;
-  energy: number;
   level: number;
   lastRegenAt: Date | null;
 };
 
 /**
- * Lazy regen: how much hp/energy a player has recovered since `lastRegenAt`, computed on read.
+ * Lazy regen: how much hp a player has recovered since `lastRegenAt`, computed on read.
  * Pure — returns the new values; the caller persists them. `lastRegenAt` only advances by the
  * ticks actually consumed, so no fractional time is lost across calls.
  */
@@ -42,13 +37,12 @@ export function applyRegen(
   p: Regenable,
   cls: ClassDef,
   nowMs: number,
-): { hp: number; energy: number; lastRegenAt: Date } {
+): { hp: number; lastRegenAt: Date } {
   const lastMs = p.lastRegenAt ? p.lastRegenAt.getTime() : nowMs;
   const ticks = Math.floor((nowMs - lastMs) / RPG.regenIntervalMs);
-  if (ticks <= 0) return { hp: p.hp, energy: p.energy, lastRegenAt: p.lastRegenAt ?? new Date(nowMs) };
+  if (ticks <= 0) return { hp: p.hp, lastRegenAt: p.lastRegenAt ?? new Date(nowMs) };
   return {
     hp: Math.min(maxHp(cls, p.level), p.hp + ticks * RPG.hpPerTick),
-    energy: Math.min(maxEnergy(cls, p.level), p.energy + ticks * RPG.energyPerTick),
     lastRegenAt: new Date(lastMs + ticks * RPG.regenIntervalMs),
   };
 }

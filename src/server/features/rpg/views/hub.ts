@@ -1,9 +1,17 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type User } from "discord.js";
 import { HUB_CATEGORIES, RPG } from "../config";
 import { buildId } from "../domain/custom-id";
-import { classDef, maxEnergy, maxHp, xpBar, xpForLevel } from "../domain/stats";
+import { classDef, maxHp, xpBar, xpForLevel } from "../domain/stats";
 import type { RpgPlayer } from "../queries";
 import type { RpgScreen } from "./types";
+
+/** Category `style` token → Discord button color. */
+const BUTTON_STYLE: Record<string, ButtonStyle> = {
+  primary: ButtonStyle.Primary,
+  secondary: ButtonStyle.Secondary,
+  success: ButtonStyle.Success,
+  danger: ButtonStyle.Danger,
+};
 
 /** Chunk hub category buttons into rows of 3 (stays well under Discord's 5×5 component cap). */
 function categoryRows(ownerId: string): ActionRowBuilder<ButtonBuilder>[] {
@@ -15,7 +23,7 @@ function categoryRows(ownerId: string): ActionRowBuilder<ButtonBuilder>[] {
           .setCustomId(buildId(ownerId, c.view))
           .setLabel(c.label)
           .setEmoji(c.emoji)
-          .setStyle(ButtonStyle.Secondary),
+          .setStyle(BUTTON_STYLE[c.style] ?? ButtonStyle.Secondary),
       ),
     );
     rows.push(row);
@@ -27,19 +35,25 @@ function categoryRows(ownerId: string): ActionRowBuilder<ButtonBuilder>[] {
 export function renderHub(player: RpgPlayer, user: User): RpgScreen {
   const cls = classDef(player.classId);
   const needed = xpForLevel(player.level);
-  const bar = xpBar(player.xp, needed);
+  const bar = xpBar(player.xp, needed, 18);
+  const avatar = user.displayAvatarURL({ size: 256 });
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
+    .setAuthor({ name: `${cls.name} · Level ${player.level}`, iconURL: avatar })
     .setTitle(`${cls.emoji}  ${player.name ?? user.displayName}`)
-    .setThumbnail(user.displayAvatarURL())
-    .setDescription(
-      [
-        `**Level ${player.level}**  ·  ${cls.name}`,
-        `XP ${bar}  ${player.xp.toLocaleString()} / ${needed.toLocaleString()}`,
-        `❤️ ${player.hp}/${maxHp(cls, player.level)}   ⚡ ${player.energy}/${maxEnergy(cls, player.level)}   💰 ${player.gold.toLocaleString()}g`,
-      ].join("\n"),
-    );
+    .setThumbnail(avatar)
+    .addFields(
+      { name: "Level", value: `\`${player.level}\``, inline: true },
+      { name: "Health", value: `❤️ ${player.hp} / ${maxHp(cls, player.level)}`, inline: true },
+      { name: "Gold", value: `💰 ${player.gold.toLocaleString()}`, inline: true },
+      {
+        name: "Experience",
+        value: `${bar}\n\`${player.xp.toLocaleString()} / ${needed.toLocaleString()} XP\``,
+        inline: false,
+      },
+    )
+    .setFooter({ text: cls.blurb });
 
   return { embeds: [embed], components: categoryRows(user.id) };
 }

@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/server/db";
 import { rpgConfig, rpgPlayers } from "./schema";
-import { classDef, maxEnergy, maxHp } from "./domain/stats";
+import { classDef, maxHp } from "./domain/stats";
 
 export type RpgPlayer = typeof rpgPlayers.$inferSelect;
 type PlayerPatch = Partial<typeof rpgPlayers.$inferInsert>;
@@ -15,7 +15,7 @@ export async function getPlayer(guildId: string, userId: string): Promise<RpgPla
   return rows[0] ?? null;
 }
 
-/** Create a fresh character at level 1 with full hp/energy for its class. */
+/** Create a fresh character at level 1 with full hp for its class. */
 export async function createPlayer(
   guildId: string,
   userId: string,
@@ -29,7 +29,6 @@ export async function createPlayer(
       userId,
       classId,
       hp: maxHp(cls, 1),
-      energy: maxEnergy(cls, 1),
       lastRegenAt: new Date(),
     })
     .returning();

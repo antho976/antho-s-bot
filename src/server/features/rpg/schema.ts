@@ -14,8 +14,8 @@ export const rpgConfig = sqliteTable("rpg_config", {
 });
 
 /**
- * One character per player, per guild. `hp`/`energy` are current values; their maxes are
- * derived from class + level (domain/stats). `lastRegenAt` drives lazy regen on read — no
+ * One character per player, per guild. `hp` is the current value; its max is derived from
+ * class + level (domain/stats). `lastRegenAt` drives lazy hp regen on read — no
  * background per-player timers (planning/11). `lastHub*` lets a fresh /rpg replace the old board.
  */
 export const rpgPlayers = sqliteTable(
@@ -29,7 +29,6 @@ export const rpgPlayers = sqliteTable(
     level: integer("level").notNull().default(1),
     xp: integer("xp").notNull().default(0),
     hp: integer("hp").notNull().default(0),
-    energy: integer("energy").notNull().default(0),
     gold: integer("gold").notNull().default(0),
     lastRegenAt: ts("last_regen_at"),
     lastHubChannelId: text("last_hub_channel_id"),
