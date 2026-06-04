@@ -2,11 +2,12 @@ import type { ButtonInteraction, StringSelectMenuInteraction } from "discord.js"
 import { track } from "@/server/core/analytics";
 import { CLASSES, DEFAULT_CLASS, DIFFICULTY_MAP } from "./config";
 import { parseId } from "./domain/custom-id";
-import { createPlayer, getPlayer } from "./queries";
+import { createPlayer, deletePlayer, getPlayer } from "./queries";
 import { runAdventure, withRegen } from "./service";
 import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderHub } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
+import { renderDeleteConfirm, renderOptions } from "./views/options";
 import { renderPlaceholder } from "./views/scaffold";
 import type { RpgScreen } from "./views/types";
 
@@ -79,10 +80,20 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
       }
       return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
     }
+    case "options": {
+      if (route.action === "delete") {
+        return { kind: "update", screen: renderDeleteConfirm(interaction.user) };
+      }
+      if (route.action === "confirm") {
+        await deletePlayer(fresh.id);
+        void track(guildId, "rpg_character_deleted", {});
+        return { kind: "update", screen: renderIntro(interaction.user) };
+      }
+      return { kind: "update", screen: renderOptions(interaction.user) };
+    }
     case "inventory":
     case "guild":
     case "quests":
-    case "options":
       return {
         kind: "update",
         screen: renderPlaceholder(route.ownerId, route.view, interaction.user),

@@ -5,6 +5,7 @@ import { PageHeader } from "../_components/ui/page-header";
 import { Leaderboard, type LeaderboardEntry } from "./components/leaderboard";
 import { LevelingSettings } from "./components/leveling-settings";
 import { RewardsManager } from "./components/rewards-manager";
+import { RoleLevelSync } from "./components/role-level-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function LevelingPage() {
       />
       <Leaderboard entries={entries} />
       <RewardsManager initial={rewards} />
+      <RoleLevelSync />
       <LevelingSettings initial={config} />
     </div>
   );

@@ -42,6 +42,12 @@ export async function updatePlayer(id: number, patch: PlayerPatch): Promise<void
     .where(eq(rpgPlayers.id, id));
 }
 
+/** Permanently delete a character and everything it owns. */
+export async function deletePlayer(playerId: number): Promise<void> {
+  await db.delete(rpgInventory).where(eq(rpgInventory.playerId, playerId));
+  await db.delete(rpgPlayers).where(eq(rpgPlayers.id, playerId));
+}
+
 /**
  * Add `qty` of a stackable item to a player's inventory (find-or-insert the stackable row). Rolled
  * instances would be separate rows, so we only stack onto the null-instance row. Single-player

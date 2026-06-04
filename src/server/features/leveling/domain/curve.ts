@@ -46,3 +46,14 @@ export function levelFromXp(
 ): number {
   return progressFromXp(totalXp, c, custom).level;
 }
+
+/** Cumulative XP needed to sit exactly at the start of `level` (level 0 → 0 XP). */
+export function xpToReachLevel(
+  level: number,
+  c: CurveConfig,
+  custom?: Map<number, number>,
+): number {
+  let total = 0;
+  for (let i = 0; i < level; i++) total += xpForLevel(i, c, custom);
+  return total;
+}
