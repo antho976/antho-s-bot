@@ -1,9 +1,10 @@
 import { and, count, desc, eq } from "drizzle-orm";
 import { db } from "@/server/db";
-import { supportConfig, tickets } from "@/server/db/schema";
+import { feedback, supportConfig, tickets } from "@/server/db/schema";
 
 export type SupportConfig = typeof supportConfig.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;
+export type Feedback = typeof feedback.$inferSelect;
 
 export function defaultConfig(guildId: string): SupportConfig {
   return { guildId, enabled: false, channelId: null, staffRoleId: null, updatedAt: null };
@@ -69,4 +70,27 @@ export function listTickets(guildId: string, status?: "open" | "closed", limit =
     ? and(eq(tickets.guildId, guildId), eq(tickets.status, status))
     : eq(tickets.guildId, guildId);
   return db.select().from(tickets).where(where).orderBy(desc(tickets.createdAt)).limit(limit);
+}
+
+/** Store a member suggestion from /suggest. */
+export async function addFeedback(
+  guildId: string,
+  userId: string,
+  content: string,
+  category = "suggestion",
+): Promise<Feedback> {
+  const rows = await db
+    .insert(feedback)
+    .values({ guildId, userId, content, category })
+    .returning();
+  return rows[0];
+}
+
+export function listFeedback(guildId: string, limit = 50) {
+  return db
+    .select()
+    .from(feedback)
+    .where(eq(feedback.guildId, guildId))
+    .orderBy(desc(feedback.createdAt))
+    .limit(limit);
 }

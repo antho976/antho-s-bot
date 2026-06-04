@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/server/db";
 import { levelConfig, levelCurve, levelRewards, levels } from "@/server/db/schema";
 
@@ -14,6 +14,51 @@ export async function getLevelValue(guildId: string, userId: string): Promise<nu
     .where(and(eq(levels.guildId, guildId), eq(levels.userId, userId)))
     .limit(1);
   return rows[0]?.level ?? 0;
+}
+
+/** A member's full level row, or null if they've earned no XP yet. */
+export async function getLevelRow(guildId: string, userId: string): Promise<LevelRow | null> {
+  const rows = await db
+    .select()
+    .from(levels)
+    .where(and(eq(levels.guildId, guildId), eq(levels.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** 1-based rank of an XP total within the guild (how many sit strictly above it, + 1). */
+export async function xpRank(guildId: string, xp: number): Promise<number> {
+  const rows = await db
+    .select({ n: count() })
+    .from(levels)
+    .where(and(eq(levels.guildId, guildId), gt(levels.xp, xp)));
+  return (rows[0]?.n ?? 0) + 1;
+}
+
+/** How many members have a level row in this guild (the leaderboard's denominator). */
+export async function rankedMemberCount(guildId: string): Promise<number> {
+  const rows = await db.select({ n: count() }).from(levels).where(eq(levels.guildId, guildId));
+  return rows[0]?.n ?? 0;
+}
+
+/** Top members by voice minutes (only those with any). */
+export function topByVoice(guildId: string, limit = 10) {
+  return db
+    .select()
+    .from(levels)
+    .where(and(eq(levels.guildId, guildId), gt(levels.voiceMinutes, 0)))
+    .orderBy(desc(levels.voiceMinutes))
+    .limit(limit);
+}
+
+/** Top members by message count (only those with any). */
+export function topByMessages(guildId: string, limit = 10) {
+  return db
+    .select()
+    .from(levels)
+    .where(and(eq(levels.guildId, guildId), gt(levels.messages, 0)))
+    .orderBy(desc(levels.messages))
+    .limit(limit);
 }
 
 /** Defaults used when a guild hasn't saved a config yet (mirrors the schema defaults). */

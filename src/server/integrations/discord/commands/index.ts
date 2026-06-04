@@ -1,12 +1,32 @@
 import type { BotCommand } from "./types";
-import { ping } from "./ping";
-import { ticket } from "./ticket";
-import { birthday } from "./birthday";
-import { pet } from "./pet";
 import { rpg } from "./rpg";
+import { rank } from "./rank";
+import { leaderboards } from "./leaderboards";
+import { commandList } from "./command-list";
+import { help } from "./help";
+import { suggest } from "./suggest";
+import { ticket } from "./ticket";
+import { addxp } from "./addxp";
+import { poll } from "./poll";
+import { giveaway } from "./giveaway";
+import { polllist } from "./polllist";
+import { giveawaylist } from "./giveawaylist";
 
-// Static command list. Feature commands are added here as features land.
-export const commands: BotCommand[] = [ping, ticket, birthday, pet, rpg];
+// Static command list. Order here is the order they register with Discord.
+export const commands: BotCommand[] = [
+  rpg,
+  rank,
+  leaderboards,
+  commandList,
+  help,
+  suggest,
+  ticket,
+  addxp,
+  poll,
+  giveaway,
+  polllist,
+  giveawaylist,
+];
 
 export const commandMap = new Map<string, BotCommand>(
   commands.map((c) => [c.data.name, c]),

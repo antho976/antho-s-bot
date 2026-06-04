@@ -1,7 +1,13 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, type Guild } from "discord.js";
 import { track } from "@/server/core/analytics";
+import { logger } from "@/server/core/logger";
 import { sendToChannel } from "@/server/integrations/discord/send";
-import { getConfig, recordEvent, type MemberLogConfig } from "./queries";
+import {
+  getConfig,
+  recordEvent,
+  seedRoleSnapshots,
+  type MemberLogConfig,
+} from "./queries";
 
 type ToggleKey = keyof MemberLogConfig;
 
@@ -29,13 +35,22 @@ const TYPE_COLOR: Record<string, number> = {
   voice: 0x64748b,
 };
 
+export interface LogField {
+  name: string;
+  value: string;
+  inline?: boolean;
+}
+
 export interface LogInput {
   type: string;
   title: string;
   summary: string;
   description?: string;
   userId?: string;
-  fields?: { name: string; value: string }[];
+  url?: string; // clickable title (e.g. a jump-to-message link)
+  author?: { name: string; iconURL?: string }; // avatar + name header
+  thumbnail?: string;
+  fields?: LogField[];
 }
 
 /** Check the relevant toggle, record the event, and post an embed to the log channel. */
@@ -52,14 +67,43 @@ export async function logEvent(guildId: string, input: LogInput): Promise<void> 
     .setColor(TYPE_COLOR[input.type] ?? 0x64748b)
     .setTitle(input.title)
     .setTimestamp(new Date());
+  if (input.url) embed.setURL(input.url);
+  if (input.author) embed.setAuthor(input.author);
+  if (input.thumbnail) embed.setThumbnail(input.thumbnail);
   if (input.description) embed.setDescription(input.description.slice(0, 4000));
   if (input.fields?.length) {
     embed.addFields(
-      input.fields.map((f) => ({ name: f.name, value: f.value.slice(0, 1024) || "—" })),
+      input.fields.map((f) => ({
+        name: f.name,
+        value: f.value.slice(0, 1024) || "—",
+        inline: f.inline ?? false,
+      })),
     );
   }
   if (input.userId) embed.setFooter({ text: `ID: ${input.userId}` });
 
   await sendToChannel(config.channelId, { embeds: [embed] });
   await track(guildId, `memberlog.${input.type}`, { userId: input.userId });
+}
+
+/**
+ * Snapshot every member's current roles so roles-updated logs can diff against real prior state.
+ * One gateway member fetch per guild (no per-member REST calls); runs on startup and is cheap to
+ * repeat. Best-effort — never throws into the boot sequence.
+ */
+export async function seedGuildRoleSnapshots(guild: Guild): Promise<void> {
+  try {
+    const members = await guild.members.fetch();
+    const entries = members.map((m) => ({
+      userId: m.id,
+      roleIds: [...m.roles.cache.keys()].filter((id) => id !== guild.id),
+    }));
+    await seedRoleSnapshots(guild.id, entries);
+    logger.info(
+      "member-logs",
+      `Seeded role snapshots for ${entries.length} member(s) in ${guild.name}.`,
+    );
+  } catch (err) {
+    logger.warn("member-logs", `Could not seed role snapshots for guild ${guild.id}`, err);
+  }
 }

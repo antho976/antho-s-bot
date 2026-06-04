@@ -10,6 +10,7 @@ import {
   loadCurveMap,
   updateLevelRow,
   type LevelConfig,
+  type LevelRow,
 } from "./queries";
 
 export interface XpContext {
@@ -22,7 +23,8 @@ function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-async function curveFor(config: LevelConfig) {
+/** Build the curve inputs for a guild (loads custom XP overrides only when needed). */
+export async function curveFor(config: LevelConfig) {
   const c: CurveConfig = {
     curveType: config.curveType,
     curveBase: config.curveBase,
@@ -34,6 +36,7 @@ async function curveFor(config: LevelConfig) {
 
 interface GrantExtra {
   voiceMinutes?: number;
+  messageInc?: number;
   lastMessageAt?: Date;
 }
 
@@ -53,6 +56,7 @@ async function grantXp(
     xp: newXp,
     level: newLevel,
     ...(extra?.voiceMinutes ? { voiceMinutes: row.voiceMinutes + extra.voiceMinutes } : {}),
+    ...(extra?.messageInc ? { messages: row.messages + extra.messageInc } : {}),
     ...(extra?.lastMessageAt ? { lastMessageAt: extra.lastMessageAt } : {}),
   });
 
@@ -93,12 +97,41 @@ export async function awardMessageXp(ctx: XpContext): Promise<void> {
   if (!config.enabled) return;
   const row = await getOrCreateLevel(ctx.guildId, ctx.userId);
   const nowMs = Date.now();
-  if (row.lastMessageAt && nowMs - row.lastMessageAt.getTime() < config.msgCooldownSec * 1000) {
-    return; // still on cooldown
+  const onCooldown =
+    row.lastMessageAt != null && nowMs - row.lastMessageAt.getTime() < config.msgCooldownSec * 1000;
+  if (onCooldown) {
+    // No XP this tick, but the message still counts toward the messages leaderboard.
+    await updateLevelRow(row.id, { messages: row.messages + 1 });
+    return;
   }
   await grantXp(ctx, config, randInt(config.xpMsgMin, config.xpMsgMax), {
     lastMessageAt: new Date(nowMs),
+    messageInc: 1,
   });
+}
+
+/**
+ * Admin action behind /addxp: add (or, with a negative delta, remove) XP for a member and
+ * recompute their level. Fires the normal level-up side effects when the level rises.
+ */
+export async function addXpAdmin(
+  guildId: string,
+  userId: string,
+  delta: number,
+  channelId?: string,
+): Promise<LevelRow> {
+  const config = await getConfig(guildId);
+  const row = await getOrCreateLevel(guildId, userId);
+  const newXp = Math.max(0, row.xp + Math.trunc(delta));
+  const { c, custom } = await curveFor(config);
+  const newLevel = levelFromXp(newXp, c, custom);
+
+  await updateLevelRow(row.id, { xp: newXp, level: newLevel });
+  if (newLevel > row.level) {
+    await onLevelUp({ guildId, userId, channelId }, config, newLevel);
+  }
+  await track(guildId, "level.addxp", { userId, delta: Math.trunc(delta), level: newLevel });
+  return { ...row, xp: newXp, level: newLevel };
 }
 
 export async function awardReactionXp(ctx: XpContext): Promise<void> {

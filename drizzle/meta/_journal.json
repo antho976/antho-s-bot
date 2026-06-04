@@ -134,6 +134,20 @@
       "when": 1780595358593,
       "tag": "0018_mixed_the_spike",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1780600546697,
+      "tag": "0019_white_darkhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1780602354128,
+      "tag": "0020_lucky_wolfsbane",
+      "breakpoints": true
     }
   ]
 }

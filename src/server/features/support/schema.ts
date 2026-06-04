@@ -34,3 +34,18 @@ export const tickets = sqliteTable(
     index("tickets_thread").on(t.threadId),
   ],
 );
+
+/** A member suggestion from /suggest. Lands in the Support & Feedback dashboard tab. */
+export const feedback = sqliteTable(
+  "feedback",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    guildId: text("guild_id").notNull(),
+    userId: text("user_id").notNull(),
+    content: text("content").notNull(),
+    category: text("category").notNull().default("suggestion"),
+    status: text("status").notNull().default("new"), // new | read
+    createdAt: ts("created_at").$defaultFn(now),
+  },
+  (t) => [index("feedback_guild_created").on(t.guildId, t.createdAt)],
+);

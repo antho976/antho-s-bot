@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 const now = () => new Date();
 const ts = (n: string) => integer(n, { mode: "timestamp_ms" });
@@ -40,4 +40,21 @@ export const memberEvents = sqliteTable(
     index("member_events_guild_created").on(t.guildId, t.createdAt),
     index("member_events_type").on(t.type),
   ],
+);
+
+/**
+ * Last-known role set per member, so a roles-updated log can diff against what we stored rather
+ * than discord.js's `oldMember` cache (which is empty for uncached members → "all roles added").
+ * Seeded for every member on ready and kept current on each update.
+ */
+export const memberRoleSnapshots = sqliteTable(
+  "member_role_snapshots",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    guildId: text("guild_id").notNull(),
+    userId: text("user_id").notNull(),
+    rolesJson: text("roles_json").notNull(), // JSON string[] of role IDs (excludes @everyone)
+    updatedAt: ts("updated_at").$defaultFn(now),
+  },
+  (t) => [uniqueIndex("member_role_snap_guild_user").on(t.guildId, t.userId)],
 );

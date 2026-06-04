@@ -21,6 +21,7 @@ export const levels = sqliteTable(
     level: integer("level").notNull().default(0),
     prestige: integer("prestige").notNull().default(0),
     voiceMinutes: integer("voice_minutes").notNull().default(0),
+    messages: integer("messages").notNull().default(0),
     lastMessageAt: ts("last_message_at"),
     updatedAt: ts("updated_at").$defaultFn(now),
   },

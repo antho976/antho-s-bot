@@ -1,5 +1,6 @@
 import { env } from "@/env";
-import { getConfig, listTickets } from "@/server/features/support/queries";
+import { getClient } from "@/server/integrations/discord/client";
+import { getConfig, listFeedback, listTickets } from "@/server/features/support/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { SupportSettings } from "./components/support-settings";
 
@@ -14,10 +15,16 @@ const PRIORITY_CLR: Record<string, string> = {
 
 export default async function SupportPage() {
   const guildId = env.DISCORD_GUILD_ID ?? "default";
-  const [config, tickets] = await Promise.all([
+  const [config, tickets, suggestions] = await Promise.all([
     getConfig(guildId),
     listTickets(guildId, undefined, 50),
+    listFeedback(guildId, 50),
   ]);
+
+  // Best-effort display names from the gateway cache (no extra API calls).
+  const guild = getClient()?.guilds.cache.get(guildId);
+  const nameOf = (userId: string) =>
+    guild?.members.cache.get(userId)?.displayName ?? userId;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -68,6 +75,31 @@ export default async function SupportPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-text">Suggestions</h2>
+        <p className="mt-1 text-sm text-muted">
+          Sent in by members with <code>/suggest</code>.
+        </p>
+        {suggestions.length === 0 ? (
+          <p className="mt-2 text-sm text-faint">No suggestions yet.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {suggestions.map((s) => (
+              <div
+                key={s.id}
+                className="rounded-lg border border-border bg-surface-1 px-4 py-3 text-sm"
+              >
+                <p className="whitespace-pre-wrap text-text">{s.content}</p>
+                <p className="mt-1.5 text-xs text-faint">
+                  {nameOf(s.userId)}
+                  {s.createdAt ? ` · ${new Date(s.createdAt).toLocaleString()}` : ""}
+                </p>
+              </div>
+            ))}
           </div>
         )}
       </section>
