@@ -36,13 +36,12 @@ export function renderHub(player: RpgPlayer, user: User): RpgScreen {
   const cls = classDef(player.classId);
   const needed = xpForLevel(player.level);
   const bar = xpBar(player.xp, needed, 18);
-  const avatar = user.displayAvatarURL({ size: 256 });
+  const avatar = user.displayAvatarURL({ size: 128 });
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setAuthor({ name: `${cls.name} · Level ${player.level}`, iconURL: avatar })
-    .setTitle(`${cls.emoji}  ${player.name ?? user.displayName}`)
-    .setThumbnail(avatar)
+    .setAuthor({ name: player.name ?? user.displayName, iconURL: avatar })
+    .setTitle(`${cls.name} · Level ${player.level}`)
     .addFields(
       { name: "Level", value: `\`${player.level}\``, inline: true },
       { name: "Health", value: `❤️ ${player.hp} / ${maxHp(cls, player.level)}`, inline: true },
