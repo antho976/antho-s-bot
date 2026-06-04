@@ -1,6 +1,6 @@
 import type { ButtonInteraction, StringSelectMenuInteraction } from "discord.js";
 import { track } from "@/server/core/analytics";
-import { DEFAULT_CLASS } from "./config";
+import { DEFAULT_CLASS, DIFFICULTY_MAP } from "./config";
 import { parseId } from "./domain/custom-id";
 import { createPlayer, getPlayer } from "./queries";
 import { runAdventure, withRegen } from "./service";
@@ -52,25 +52,22 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
       return { kind: "update", screen: renderHub(fresh, interaction.user) };
     case "combat": {
       if (route.action === "go") {
-        const outcome = await runAdventure(fresh);
+        const difficulty = route.args ? DIFFICULTY_MAP[route.args] : undefined;
+        // Unknown or still-locked difficulty (stale/forged click) → just re-show the menu.
+        if (!difficulty || fresh.level < difficulty.minLevel) {
+          return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
+        }
+        const outcome = await runAdventure(fresh, difficulty);
         if (!outcome.ok) {
           return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
         }
         void track(guildId, "rpg_adventure", {
-          level: outcome.player.level,
-          gotKey: outcome.rewards.keys > 0,
-          leveled: outcome.leveledTo != null,
+          difficulty: difficulty.id,
+          defeated: outcome.report.defeated,
+          gotKey: outcome.report.keys > 0,
+          leveled: outcome.report.leveledTo != null,
         });
-        return {
-          kind: "update",
-          screen: renderAdventureResult(
-            outcome.player,
-            interaction.user,
-            outcome.mob,
-            outcome.rewards,
-            outcome.leveledTo,
-          ),
-        };
+        return { kind: "update", screen: renderAdventureResult(outcome.report, interaction.user) };
       }
       return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
     }

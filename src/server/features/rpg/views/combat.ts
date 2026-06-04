@@ -1,10 +1,16 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type User } from "discord.js";
-import { RPG, type Mob } from "../config";
+import { DIFFICULTIES, RPG } from "../config";
 import { buildId } from "../domain/custom-id";
-import type { Rewards } from "../domain/adventure";
-import { xpBar, xpForLevel } from "../domain/stats";
 import type { RpgPlayer } from "../queries";
+import type { AdventureReport } from "../service";
 import type { RpgScreen } from "./types";
+
+const BUTTON_STYLE = {
+  primary: ButtonStyle.Primary,
+  secondary: ButtonStyle.Secondary,
+  success: ButtonStyle.Success,
+  danger: ButtonStyle.Danger,
+} as const;
 
 function formatRemaining(ms: number): string {
   const total = Math.ceil(ms / 1000);
@@ -18,70 +24,83 @@ function cooldownRemaining(player: RpgPlayer, now: number): number {
   return RPG.adventureCooldownMs - (now - last);
 }
 
-/** Adventure + Back. The Adventure button stays enabled so a click refreshes the cooldown timer. */
-function combatButtons(ownerId: string): ActionRowBuilder<ButtonBuilder> {
+function backButton(ownerId: string, label: string): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(buildId(ownerId, "combat", "go"))
-      .setLabel("Adventure")
-      .setEmoji("🗺️")
-      .setStyle(ButtonStyle.Danger),
-    new ButtonBuilder()
       .setCustomId(buildId(ownerId, "hub"))
-      .setLabel("Back")
+      .setLabel(label)
       .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),
   );
 }
 
-/** The Combat landing screen: explains adventures + shows cooldown status. */
+/** The Combat landing screen: how adventures work + a difficulty button per option. */
 export function renderCombat(player: RpgPlayer, user: User, now: number): RpgScreen {
   const remaining = cooldownRemaining(player, now);
   const ready = remaining <= 0;
+
+  const legend = DIFFICULTIES.map((d) => {
+    const locked = player.level < d.minLevel;
+    return `${locked ? "🔒" : d.emoji} **${d.label}**${locked ? ` — unlocked at Lv ${d.minLevel}` : ""}`;
+  }).join("\n");
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
     .setTitle("⚔️  Adventure")
     .setDescription(
       [
-        "Head out to fight a roaming monster for **XP** and the occasional **key**.",
+        "Fight a roaming monster for **XP**, **gold** and the occasional **key**.",
+        "Tougher foes have more health and hit harder (scaled to your level) and pay out more — but **lose and you get nothing**.",
+        "",
+        legend,
         "",
         ready
-          ? "🟢 You're ready to set out."
+          ? "🟢 Pick a difficulty to set out."
           : `🟠 Resting… ready in **${formatRemaining(remaining)}**.`,
       ].join("\n"),
-    )
-    .addFields(
-      { name: "Level", value: `\`${player.level}\``, inline: true },
-      { name: "Keys", value: `🗝️ ${player.keys}`, inline: true },
-      { name: "Gold", value: `💰 ${player.gold.toLocaleString()}`, inline: true },
     );
 
-  return { embeds: [embed], components: [combatButtons(user.id)] };
+  const diffRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    ...DIFFICULTIES.map((d) => {
+      const locked = player.level < d.minLevel;
+      return new ButtonBuilder()
+        .setCustomId(buildId(user.id, "combat", "go", d.id))
+        .setLabel(d.label)
+        .setEmoji(locked ? "🔒" : d.emoji)
+        .setStyle(BUTTON_STYLE[d.style])
+        .setDisabled(!ready || locked);
+    }),
+  );
+
+  return { embeds: [embed], components: [diffRow, backButton(user.id, "Back")] };
 }
 
-/** Shown after a successful adventure: the encounter + what you got. */
-export function renderAdventureResult(
-  player: RpgPlayer,
-  user: User,
-  mob: Mob,
-  rewards: Rewards,
-  leveledTo: number | null,
-): RpgScreen {
-  const lines = [`You encountered a ${mob.emoji} **${mob.name}** and won!`, "", `✨ +${rewards.xp} XP`];
-  if (rewards.keys > 0) lines.push(`🗝️ Found a **key**!`);
-  if (leveledTo) lines.push("", `🎉 **Level up!** You're now level **${leveledTo}**.`);
+/** The mob report after a fight — what you gained (or that you lost). */
+export function renderAdventureResult(report: AdventureReport, user: User): RpgScreen {
+  const { mob, difficulty } = report;
+  let lines: string[];
 
-  const needed = xpForLevel(player.level);
+  if (report.defeated) {
+    lines = [
+      `💀 The ${mob.emoji} **${mob.name}** (${difficulty.label}) bested you — **no rewards**.`,
+      `❤️ HP: **${report.hp}** / ${report.maxHp}`,
+    ];
+  } else {
+    lines = [
+      `${mob.emoji} You beat the **${mob.name}** (${difficulty.label}) in ${report.rounds} round${report.rounds === 1 ? "" : "s"}!`,
+      "",
+      `✨ +${report.xp.toLocaleString()} XP`,
+      `💰 +${report.gold.toLocaleString()} gold`,
+    ];
+    if (report.keys > 0) lines.push("🗝️ Found a **key**!");
+    if (report.leveledTo) lines.push(`🎉 **Level up!** You're now level **${report.leveledTo}**.`);
+    lines.push(`❤️ Took ${report.hpLost} damage — HP **${report.hp}** / ${report.maxHp}`);
+  }
+
   const embed = new EmbedBuilder()
-    .setColor(RPG.embedColor)
+    .setColor(report.defeated ? 0xe74c3c : RPG.embedColor)
     .setTitle("⚔️  Adventure")
-    .setDescription(lines.join("\n"))
-    .addFields({
-      name: "Experience",
-      value: `${xpBar(player.xp, needed, 18)}\n\`${player.xp} / ${needed} XP\``,
-      inline: false,
-    });
+    .setDescription(lines.join("\n"));
 
-  return { embeds: [embed], components: [combatButtons(user.id)] };
+  return { embeds: [embed], components: [backButton(user.id, "Back to Hub")] };
 }

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 // RPG v2 — see planning/11-rpg-design.md. All tables use the `rpg_` prefix (planning/03).
 // `guildId` = Discord server (never the in-game "clan"). Timestamps are epoch-ms (UTC).
@@ -30,7 +30,6 @@ export const rpgPlayers = sqliteTable(
     xp: integer("xp").notNull().default(0),
     hp: integer("hp").notNull().default(0),
     gold: integer("gold").notNull().default(0),
-    keys: integer("keys").notNull().default(0),
     lastRegenAt: ts("last_regen_at"),
     lastAdventureAt: ts("last_adventure_at"), // adventure cooldown (lazy check, no timer)
     lastHubChannelId: text("last_hub_channel_id"),
@@ -39,4 +38,23 @@ export const rpgPlayers = sqliteTable(
     updatedAt: ts("updated_at").$defaultFn(now),
   },
   (t) => [uniqueIndex("rpg_players_guild_user").on(t.guildId, t.userId)],
+);
+
+/**
+ * Player inventory. `itemId` references the code ITEMS catalog (config). Stackables (keys,
+ * resources) keep one row with `qty`; `instanceStatsJson` is the hybrid seam (planning/11) — when
+ * populated it's a rolled, non-stacking instance (e.g. a weapon), so those become separate rows.
+ */
+export const rpgInventory = sqliteTable(
+  "rpg_inventory",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    playerId: integer("player_id").notNull(),
+    itemId: text("item_id").notNull(),
+    qty: integer("qty").notNull().default(0),
+    instanceStatsJson: text("instance_stats_json"),
+    createdAt: ts("created_at").$defaultFn(now),
+    updatedAt: ts("updated_at").$defaultFn(now),
+  },
+  (t) => [index("rpg_inventory_player").on(t.playerId)],
 );

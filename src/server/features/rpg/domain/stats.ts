@@ -41,8 +41,10 @@ export function applyRegen(
   const lastMs = p.lastRegenAt ? p.lastRegenAt.getTime() : nowMs;
   const ticks = Math.floor((nowMs - lastMs) / RPG.regenIntervalMs);
   if (ticks <= 0) return { hp: p.hp, lastRegenAt: p.lastRegenAt ?? new Date(nowMs) };
+  const mh = maxHp(cls, p.level);
+  const perTick = Math.max(1, Math.floor(mh * RPG.regenPercent)); // % of max → scales with level
   return {
-    hp: Math.min(maxHp(cls, p.level), p.hp + ticks * RPG.hpPerTick),
+    hp: Math.min(mh, p.hp + ticks * perTick),
     lastRegenAt: new Date(lastMs + ticks * RPG.regenIntervalMs),
   };
 }
