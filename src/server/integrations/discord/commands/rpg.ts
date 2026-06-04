@@ -4,7 +4,7 @@ import { track } from "@/server/core/analytics";
 import { getPlayer, getRpgConfig } from "@/server/features/rpg/queries";
 import { rememberHubMessage, withRegen } from "@/server/features/rpg/service";
 import { renderHub } from "@/server/features/rpg/views/hub";
-import { renderWelcome } from "@/server/features/rpg/views/scaffold";
+import { renderIntro } from "@/server/features/rpg/views/onboarding";
 
 export const rpg: BotCommand = {
   data: new SlashCommandBuilder().setName("rpg").setDescription("Open your adventure hub"),
@@ -28,8 +28,8 @@ export const rpg: BotCommand = {
 
     const existing = await getPlayer(guildId, interaction.user.id);
     if (!existing) {
-      // No character yet — show the create screen (its button creates the character).
-      await interaction.reply(renderWelcome(interaction.user));
+      // No character yet — show the intro lore (its button leads to class selection).
+      await interaction.reply(renderIntro(interaction.user));
       return;
     }
 

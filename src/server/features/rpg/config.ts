@@ -11,11 +11,9 @@ export const RPG = {
 
   adventureCooldownMs: 3 * 60_000, // one adventure per 3 min (poll: 1–5 → 3)
 
-  // Combat. yourDamage = atkBase + atkPerLevel*(level-1) + equipped weapon (0 for now — the weapon
-  // term is the seam so gear matters; we don't auto-scale it away). A fight is:
+  // Combat. yourDamage = your class's atkBase + atkPerLevel*(level-1) + equipped weapon (0 for now;
+  // the weapon term is the seam so gear matters). A fight is:
   //   rounds = ceil(mobHp / yourDamage); the mob hits you (rounds − 1) times for mobDmg each.
-  atkBase: 8,
-  atkPerLevel: 4,
   mobHpBase: 18,
   mobHpPerLevel: 10,
   mobDmgBase: 6,
@@ -80,24 +78,56 @@ export type ClassDef = {
   blurb: string;
   baseHp: number;
   hpPerLevel: number;
+  atkBase: number; // your damage per round at level 1
+  atkPerLevel: number;
 };
 
 /**
- * Class catalog. Single class for now, but it's a keyed list so adding classes (and, later,
- * multi-class) is data, not a rewrite (planning/11).
+ * Starter classes. A keyed list so adding classes (and the later branch specialisations) is data,
+ * not a rewrite (planning/11). Stats give each a real identity: Warrior tanks, Mage glass-cannons,
+ * Archer balances.
  */
 export const CLASSES: Record<string, ClassDef> = {
-  adventurer: {
-    id: "adventurer",
-    name: "Adventurer",
-    emoji: "🗡️",
-    blurb: "A versatile wanderer — jack of all trades.",
+  warrior: {
+    id: "warrior",
+    name: "Warrior",
+    emoji: "🛡️",
+    blurb: "Shield-bound and unbroken. The frontline of every saga, soaking blows that fell lesser folk.",
+    baseHp: 130,
+    hpPerLevel: 26,
+    atkBase: 8,
+    atkPerLevel: 4,
+  },
+  mage: {
+    id: "mage",
+    name: "Mage",
+    emoji: "🔮",
+    blurb: "Reads the runes and bends the seidr. Devastating, but fragile. Strike first or fall fast.",
+    baseHp: 80,
+    hpPerLevel: 14,
+    atkBase: 13,
+    atkPerLevel: 6,
+  },
+  archer: {
+    id: "archer",
+    name: "Archer",
+    emoji: "🏹",
+    blurb: "Swift and sure, blessed by the hunt. Balanced of hand and deadly at any range.",
     baseHp: 100,
     hpPerLevel: 20,
+    atkBase: 10,
+    atkPerLevel: 5,
   },
 };
 
-export const DEFAULT_CLASS = "adventurer";
+export const DEFAULT_CLASS = "warrior";
+
+/** The world's opening lore — Norse and Greek myth share these realms. Shown on first /rpg. */
+export const INTRO_LORE = [
+  "The Allfather's ravens and the Fates' shears watch over the same mortals now.",
+  "Aesir and Olympian have grown distant, and the realms between them teem with monsters, ruins, and forgotten gold.",
+  "You are no one yet. But every saga begins with a single step.",
+].join("\n\n");
 
 /**
  * Hub categories → one button each. Data-driven so views are added without touching the hub.
@@ -107,7 +137,6 @@ export const HUB_CATEGORIES = [
   { view: "combat", label: "Combat", emoji: "⚔️", style: "danger" },
   { view: "inventory", label: "Inventory", emoji: "🎒", style: "primary" },
   { view: "guild", label: "Guild", emoji: "🏰", style: "success" },
-  { view: "shop", label: "Shop", emoji: "🛒", style: "success" },
   { view: "quests", label: "Quests", emoji: "📜", style: "primary" },
   { view: "options", label: "Options", emoji: "⚙️", style: "secondary" },
 ] as const;

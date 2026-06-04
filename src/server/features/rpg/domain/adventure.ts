@@ -1,5 +1,5 @@
 // Pure adventure resolution — no IO, unit-testable. The service composes these + persists.
-import { MOBS, RPG, type Difficulty, type Mob } from "../config";
+import { MOBS, RPG, type ClassDef, type Difficulty, type Mob } from "../config";
 import { xpForLevel } from "./stats";
 
 export type Rewards = { xp: number; gold: number; keys: number };
@@ -17,9 +17,9 @@ export function pickMob(level: number, rng: () => number = Math.random): Mob {
   return pool[randInt(0, pool.length - 1, rng)];
 }
 
-/** Your damage per round. Equipped weapon damage adds here later (the seam so gear matters). */
-export function playerDamage(level: number): number {
-  return RPG.atkBase + RPG.atkPerLevel * (level - 1); // + equipped weapon (0 for now)
+/** Your damage per round, from your class. Equipped weapon damage adds here later (the seam). */
+export function playerDamage(cls: ClassDef, level: number): number {
+  return cls.atkBase + cls.atkPerLevel * (level - 1); // + equipped weapon (0 for now)
 }
 
 /** Mob health + damage, scaled off your level and the difficulty. */
@@ -33,9 +33,14 @@ export function mobStats(level: number, diff: Difficulty): { hp: number; dmg: nu
  * Resolve a fight: rounds to kill the mob = ceil(mobHp / yourDamage); the mob hits you (rounds − 1)
  * times (3 hits to kill → 2 hits taken). If that damage would down you, it's a defeat.
  */
-export function resolveFight(level: number, currentHp: number, diff: Difficulty): Fight {
+export function resolveFight(
+  cls: ClassDef,
+  level: number,
+  currentHp: number,
+  diff: Difficulty,
+): Fight {
   const { hp, dmg } = mobStats(level, diff);
-  const rounds = Math.max(1, Math.ceil(hp / Math.max(1, playerDamage(level))));
+  const rounds = Math.max(1, Math.ceil(hp / Math.max(1, playerDamage(cls, level))));
   const hpLost = dmg * (rounds - 1);
   return { rounds, hpLost, defeated: hpLost >= currentHp };
 }

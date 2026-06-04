@@ -1,12 +1,13 @@
 import type { ButtonInteraction, StringSelectMenuInteraction } from "discord.js";
 import { track } from "@/server/core/analytics";
-import { DEFAULT_CLASS, DIFFICULTY_MAP } from "./config";
+import { CLASSES, DEFAULT_CLASS, DIFFICULTY_MAP } from "./config";
 import { parseId } from "./domain/custom-id";
 import { createPlayer, getPlayer } from "./queries";
 import { runAdventure, withRegen } from "./service";
 import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderHub } from "./views/hub";
-import { renderPlaceholder, renderWelcome } from "./views/scaffold";
+import { renderIntro, renderClassSelect } from "./views/onboarding";
+import { renderPlaceholder } from "./views/scaffold";
 import type { RpgScreen } from "./views/types";
 
 type RpgComponent = ButtonInteraction | StringSelectMenuInteraction;
@@ -35,16 +36,23 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
 
   const guildId = interaction.guildId;
 
-  // Character creation: the welcome screen's Start button.
+  // Onboarding: the class-select buttons create the character with the chosen class.
   if (route.view === "create") {
     const existing = await getPlayer(guildId, interaction.user.id);
-    const player = existing ?? (await createPlayer(guildId, interaction.user.id, DEFAULT_CLASS));
-    if (!existing) void track(guildId, "rpg_character_created", { classId: DEFAULT_CLASS });
+    const classId = route.action && CLASSES[route.action] ? route.action : DEFAULT_CLASS;
+    const player = existing ?? (await createPlayer(guildId, interaction.user.id, classId));
+    if (!existing) void track(guildId, "rpg_character_created", { classId });
     return { kind: "update", screen: renderHub(player, interaction.user) };
   }
 
   const player = await getPlayer(guildId, interaction.user.id);
-  if (!player) return { kind: "update", screen: renderWelcome(interaction.user) };
+  if (!player) {
+    // No character yet → intro lore, then class selection.
+    if (route.view === "classes") {
+      return { kind: "update", screen: renderClassSelect(interaction.user) };
+    }
+    return { kind: "update", screen: renderIntro(interaction.user) };
+  }
   const fresh = await withRegen(player);
 
   switch (route.view) {
@@ -73,7 +81,6 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
     }
     case "inventory":
     case "guild":
-    case "shop":
     case "quests":
     case "options":
       return {

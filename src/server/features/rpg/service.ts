@@ -47,7 +47,7 @@ export async function runAdventure(
 
   const cls = classDef(player.classId);
   const mob = pickMob(player.level);
-  const fight = resolveFight(player.level, player.hp, difficulty);
+  const fight = resolveFight(cls, player.level, player.hp, difficulty);
 
   if (fight.defeated) {
     const patch = { hp: 1, lastAdventureAt: new Date(now) };
