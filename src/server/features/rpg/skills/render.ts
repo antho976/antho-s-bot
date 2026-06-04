@@ -60,11 +60,18 @@ function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: b
   ctx.fill();
   ctx.stroke();
 
-  // Label only the landmarks (notables + actives); minors are explained in the menu.
+  // Labels: minors show just their bonus (their names are generic); landmarks show name + bonus.
+  ctx.textAlign = "center";
+  let ly = n.y + r + 19;
   if (n.type === "notable" || n.type === "active") {
-    ctx.font = "bold 20px sans-serif";
-    ctx.textAlign = "center";
-    outlinedText(ctx, n.name, n.x, n.y + r + 24);
+    ctx.font = "bold 17px sans-serif";
+    outlinedText(ctx, n.name, n.x, ly);
+    ly += 18;
+    ctx.font = "13px sans-serif";
+    outlinedText(ctx, n.type === "active" ? "Active" : n.desc, n.x, ly);
+  } else if (n.type === "minor") {
+    ctx.font = "14px sans-serif";
+    outlinedText(ctx, n.desc, n.x, ly);
   }
 }
 
