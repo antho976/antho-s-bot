@@ -16,6 +16,11 @@ FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+# Fonts for @napi-rs/canvas (skill-tree image, welcome cards). The slim image ships none, so
+# canvas text renders blank without this; fontconfig lets "sans-serif" resolve to DejaVu.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends fonts-dejavu-core fontconfig \
+  && rm -rf /var/lib/apt/lists/*
 # Only what `next start` needs at runtime (+ the /drizzle migrations, read from disk on boot).
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
