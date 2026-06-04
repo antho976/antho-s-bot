@@ -56,19 +56,20 @@ export function LatencyPanel({ initial }: { initial: RpgLatency }) {
       ) : (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tabular-nums text-text">{m.avgTotal}</span>
-            <span className="text-sm text-muted">ms avg / click (server-side)</span>
+            <span className="text-3xl font-semibold tabular-nums text-text">{m.avgAck}</span>
+            <span className="text-sm text-muted">ms to acknowledge (spinner clears)</span>
           </div>
 
           <div className="space-y-2 border-t border-border pt-3 text-sm">
+            <Row label="Content update" hint="screen lands, no spinner" value={ms(m.avgContent)} />
             <Row label="Processing" hint="bot + DB" value={ms(m.avgProcessing)} />
-            <Row label="Discord round-trip" hint="the update ack" value={ms(m.avgDiscord)} />
             <Row label="Gateway" hint="Discord → bot, approx" value={ms(m.avgGateway)} />
           </div>
 
           <p className="text-xs text-faint">
-            Processing is the bot&apos;s own work (parse, DB, render) — it should be tiny. The wait
-            you feel is the Discord round-trip, the network out to Discord and back, not the bot.
+            We ack with deferUpdate, so the button stops spinning at the time above — no loading
+            state. The new screen fills in right after (content update), behind a live UI. Same
+            Discord round-trip as before; it&apos;s just hidden now instead of shown as a spinner.
           </p>
         </>
       )}

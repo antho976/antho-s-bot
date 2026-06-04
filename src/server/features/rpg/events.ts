@@ -5,47 +5,72 @@ import { RPG_PREFIX } from "./domain/custom-id";
 import { recordClick } from "./metrics";
 import { handleRpgComponent, type RpgResponse } from "./router";
 
+/** Users with a click currently being handled — deferUpdate keeps buttons live, so this guards
+ *  against a rapid double-click double-acting (e.g. two adventures off one cooldown). */
+const inFlight = new Set<string>();
+
 /**
- * Routes RPG button/select interactions (custom_id `rpg:…`) into the hub router, applies the
- * result to Discord, and samples the latency split: gateway delivery, our processing (DB+render),
- * and the Discord round-trip — surfaced on the dashboard RPG page.
+ * Routes RPG button/select interactions (custom_id `rpg:…`) into the hub router.
+ *
+ * We ack with `deferUpdate()` first — Discord shows NO loading spinner — then `editReply()` the
+ * new screen in. Same Discord round-trip as `update()`, but the wait is hidden behind a live UI
+ * instead of a spinning button (the v1 feel). Latency is sampled as ack (spinner clears) vs
+ * content (screen lands), surfaced on the dashboard RPG page.
  */
 export function registerRpgEvents(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
     if (!interaction.customId.startsWith(`${RPG_PREFIX}:`)) return;
 
+    // Drop a user's overlapping click (ack it so Discord doesn't error, then bail).
+    if (inFlight.has(interaction.user.id)) {
+      await interaction.deferUpdate().catch(() => {});
+      return;
+    }
+    inFlight.add(interaction.user.id);
+
     const recvWall = Date.now();
-    const start = performance.now();
-
-    let resp: RpgResponse | null = null;
+    const t0 = performance.now();
     try {
-      resp = await handleRpgComponent(interaction);
-    } catch (err) {
-      logger.error("rpg", "Component handler failed", err);
-      resp = { kind: "reply", content: "Something went wrong." };
-    }
-    const afterWork = performance.now();
-
-    try {
-      if (resp?.kind === "update") {
-        await interaction.update(resp.screen);
-      } else if (resp?.kind === "reply") {
-        if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: resp.content, flags: MessageFlags.Ephemeral });
-        }
+      // Ack first — no spinner.
+      try {
+        await interaction.deferUpdate();
+      } catch (err) {
+        logger.error("rpg", "deferUpdate failed (expired/already acked)", err);
+        return;
       }
-    } catch (err) {
-      logger.error("rpg", "Component response failed", err);
-    }
-    const done = performance.now();
+      const ack = performance.now() - t0;
 
-    if (resp) {
+      const tWork = performance.now();
+      let resp: RpgResponse | null = null;
+      try {
+        resp = await handleRpgComponent(interaction);
+      } catch (err) {
+        logger.error("rpg", "Component handler failed", err);
+        resp = { kind: "reply", content: "Something went wrong." };
+      }
+      const processing = performance.now() - tWork;
+
+      const tContent = performance.now();
+      try {
+        if (resp?.kind === "update") {
+          await interaction.editReply(resp.screen);
+        } else if (resp?.kind === "reply") {
+          await interaction.followUp({ content: resp.content, flags: MessageFlags.Ephemeral });
+        }
+      } catch (err) {
+        logger.error("rpg", "Component response failed", err);
+      }
+      const content = performance.now() - tContent;
+
       recordClick({
         gateway: Math.max(0, recvWall - interaction.createdTimestamp),
-        processing: afterWork - start,
-        discord: done - afterWork,
+        ack,
+        processing,
+        content,
       });
+    } finally {
+      inFlight.delete(interaction.user.id);
     }
   });
 }
