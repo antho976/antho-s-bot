@@ -7,7 +7,7 @@ import { AttachmentBuilder } from "discord.js";
 import { frontier } from "./graph";
 import { nodeById, type SkillNode, type SkillTree } from "./trees";
 
-const W = 860;
+const W = 760;
 const H = 600;
 
 const COLOR = {
@@ -46,7 +46,7 @@ function outlinedText(ctx: SKRSContext2D, text: string, x: number, y: number): v
 
 function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: boolean): void {
   const big = n.type !== "minor";
-  const r = big ? 18 : 11;
+  const r = big ? 27 : 13;
 
   ctx.fillStyle = allocated ? (n.type === "active" ? COLOR.active : COLOR.passive) : front ? COLOR.frontier : COLOR.locked;
   ctx.lineWidth = front ? 4 : 3;
@@ -60,18 +60,15 @@ function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: b
   ctx.fill();
   ctx.stroke();
 
-  // Labels: minors show just their bonus (their names are generic); landmarks show name + bonus.
+  // Labels: name on top, bonus underneath. (Minors are gone — they live in Talents now.)
   ctx.textAlign = "center";
-  let ly = n.y + r + 19;
+  let ly = n.y + r + 22;
   if (n.type === "notable" || n.type === "active") {
-    ctx.font = "bold 17px sans-serif";
+    ctx.font = "bold 25px sans-serif";
     outlinedText(ctx, n.name, n.x, ly);
-    ly += 18;
-    ctx.font = "13px sans-serif";
+    ly += 26;
+    ctx.font = "19px sans-serif";
     outlinedText(ctx, n.type === "active" ? "Active" : n.desc, n.x, ly);
-  } else if (n.type === "minor") {
-    ctx.font = "14px sans-serif";
-    outlinedText(ctx, n.desc, n.x, ly);
   }
 }
 
@@ -89,7 +86,7 @@ export function renderTreeImage(tree: SkillTree, allocated: Set<string>): Attach
     if (!na || !nb) continue;
     const on = allocated.has(a) && allocated.has(b);
     ctx.strokeStyle = on ? COLOR.edgeOn : COLOR.edge;
-    ctx.lineWidth = on ? 5 : 3;
+    ctx.lineWidth = on ? 8 : 4;
     ctx.beginPath();
     ctx.moveTo(na.x, na.y);
     ctx.lineTo(nb.x, nb.y);
@@ -101,12 +98,12 @@ export function renderTreeImage(tree: SkillTree, allocated: Set<string>): Attach
 
   // Title.
   ctx.fillStyle = COLOR.title;
-  ctx.font = "bold 28px sans-serif";
+  ctx.font = "bold 32px sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("Warrior — Skill Tree", 24, 42);
+  ctx.fillText("Warrior — Skill Tree", 24, 46);
 
   // Legend (colour key) along the bottom.
-  ctx.font = "18px sans-serif";
+  ctx.font = "20px sans-serif";
   ctx.textBaseline = "middle";
   const legend: [string, string][] = [
     [COLOR.passive, "allocated"],

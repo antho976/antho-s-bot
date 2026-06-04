@@ -32,33 +32,27 @@ export type SkillTree = {
 const WARRIOR_TREE: SkillTree = {
   classId: "warrior",
   root: "root",
+  // Skill nodes only (passive + active skills). The small %/stat "filler" moves to a separate
+  // Talents tree later — keeping this tree few-but-meaningful so the nodes render big + readable.
   nodes: [
-    { id: "root", type: "root", name: "Warrior", desc: "Your beginning.", x: 430, y: 295 },
+    { id: "root", type: "root", name: "Warrior", desc: "Your beginning.", x: 380, y: 300 },
 
-    // Offense (upper right)
-    { id: "o1", type: "minor", name: "Might", desc: "+3 Damage", x: 530, y: 265, effect: { damage: 3 } },
-    { id: "o2", type: "minor", name: "Might", desc: "+3 Damage", x: 615, y: 230, effect: { damage: 3 } },
-    { id: "o3", type: "notable", name: "Warlord", desc: "+10 Dmg, +5% Crit", x: 700, y: 195, effect: { damage: 10, critChance: 0.05 } },
-    { id: "o4", type: "minor", name: "Edge", desc: "+2% Crit", x: 615, y: 320, effect: { critChance: 0.02 } },
-    { id: "o5", type: "notable", name: "Executioner", desc: "+50% Crit Dmg", x: 710, y: 350, effect: { critMult: 0.5 } },
+    // Offense
+    { id: "o3", type: "notable", name: "Warlord", desc: "+10 Dmg, +5% Crit", x: 545, y: 215, effect: { damage: 10, critChance: 0.05 } },
+    { id: "o5", type: "notable", name: "Executioner", desc: "+50% Crit Dmg", x: 660, y: 130, effect: { critMult: 0.5 } },
 
-    // Defense (upper left)
-    { id: "d1", type: "minor", name: "Guard", desc: "+2% Reduction", x: 330, y: 265, effect: { dmgReduction: 0.02 } },
-    { id: "d2", type: "minor", name: "Footwork", desc: "+2% Dodge", x: 245, y: 230, effect: { dodge: 0.02 } },
-    { id: "d3", type: "notable", name: "Ironhide", desc: "+6% Reduction", x: 160, y: 195, effect: { dmgReduction: 0.06 } },
-    { id: "d4", type: "minor", name: "Guard", desc: "+2% Reduction", x: 245, y: 320, effect: { dmgReduction: 0.02 } },
-    { id: "d5", type: "active", name: "Shield Wall", desc: "Active · Dungeons", x: 165, y: 350, ability: "shield_wall" },
+    // Defense
+    { id: "d3", type: "notable", name: "Ironhide", desc: "+6% Reduction", x: 215, y: 215, effect: { dmgReduction: 0.06 } },
+    { id: "d5", type: "active", name: "Shield Wall", desc: "Active · Dungeons", x: 105, y: 130, ability: "shield_wall" },
 
-    // Sustain (lower)
-    { id: "s1", type: "minor", name: "Leech", desc: "+3% Lifesteal", x: 430, y: 385, effect: { lifesteal: 0.03 } },
-    { id: "s2", type: "notable", name: "Bloodthirst", desc: "+8% Lifesteal", x: 430, y: 485, effect: { lifesteal: 0.08 } },
-    { id: "s3", type: "active", name: "Berserk", desc: "Active · Dungeons", x: 310, y: 470, ability: "berserk" },
-    { id: "s4", type: "minor", name: "Brawn", desc: "+4 Damage", x: 540, y: 470, effect: { damage: 4 } },
+    // Sustain
+    { id: "s2", type: "notable", name: "Bloodthirst", desc: "+8% Lifesteal", x: 380, y: 455, effect: { lifesteal: 0.08 } },
+    { id: "s3", type: "active", name: "Berserk", desc: "Active · Dungeons", x: 545, y: 500, ability: "berserk" },
   ],
   edges: [
-    ["root", "o1"], ["o1", "o2"], ["o2", "o3"], ["o1", "o4"], ["o4", "o5"],
-    ["root", "d1"], ["d1", "d2"], ["d2", "d3"], ["d1", "d4"], ["d4", "d5"],
-    ["root", "s1"], ["s1", "s2"], ["s2", "s3"], ["s2", "s4"],
+    ["root", "o3"], ["o3", "o5"],
+    ["root", "d3"], ["d3", "d5"],
+    ["root", "s2"], ["s2", "s3"],
   ],
 };
 

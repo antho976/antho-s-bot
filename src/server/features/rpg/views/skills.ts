@@ -58,8 +58,8 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
           ? "Allocate a node below — you can only take nodes connected to what you have."
           : "No points free. Level up for more, or respec.",
       ].join("\n"),
-    )
-    .setImage("attachment://skill-tree.png");
+    );
+  // Image is a standalone attachment (renders a bit larger than an embed image), not setImage.
 
   const components: (
     | ActionRowBuilder<ButtonBuilder>
