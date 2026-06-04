@@ -7,7 +7,7 @@ import { AttachmentBuilder } from "discord.js";
 import { frontier } from "./graph";
 import { nodeById, type SkillNode, type SkillTree } from "./trees";
 
-const W = 780;
+const W = 800;
 const H = 620;
 
 const COLOR = {
