@@ -7,8 +7,8 @@ import { AttachmentBuilder } from "discord.js";
 import { frontier } from "./graph";
 import { nodeById, type SkillNode, type SkillTree } from "./trees";
 
-const W = 760;
-const H = 600;
+const W = 780;
+const H = 620;
 
 const COLOR = {
   bg: "#1e1f22",
@@ -46,7 +46,7 @@ function outlinedText(ctx: SKRSContext2D, text: string, x: number, y: number): v
 
 function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: boolean): void {
   const big = n.type !== "minor";
-  const r = big ? 27 : 13;
+  const r = big ? 21 : 12;
 
   ctx.fillStyle = allocated ? (n.type === "active" ? COLOR.active : COLOR.passive) : front ? COLOR.frontier : COLOR.locked;
   ctx.lineWidth = front ? 4 : 3;
@@ -62,12 +62,12 @@ function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: b
 
   // Labels: name on top, bonus underneath. (Minors are gone — they live in Talents now.)
   ctx.textAlign = "center";
-  let ly = n.y + r + 22;
+  let ly = n.y + r + 19;
   if (n.type === "notable" || n.type === "active") {
-    ctx.font = "bold 25px sans-serif";
+    ctx.font = "bold 20px sans-serif";
     outlinedText(ctx, n.name, n.x, ly);
-    ly += 26;
-    ctx.font = "19px sans-serif";
+    ly += 22;
+    ctx.font = "15px sans-serif";
     outlinedText(ctx, n.type === "active" ? "Active" : n.desc, n.x, ly);
   }
 }
@@ -86,7 +86,7 @@ export function renderTreeImage(tree: SkillTree, allocated: Set<string>): Attach
     if (!na || !nb) continue;
     const on = allocated.has(a) && allocated.has(b);
     ctx.strokeStyle = on ? COLOR.edgeOn : COLOR.edge;
-    ctx.lineWidth = on ? 8 : 4;
+    ctx.lineWidth = on ? 6 : 3;
     ctx.beginPath();
     ctx.moveTo(na.x, na.y);
     ctx.lineTo(nb.x, nb.y);
@@ -98,12 +98,12 @@ export function renderTreeImage(tree: SkillTree, allocated: Set<string>): Attach
 
   // Title.
   ctx.fillStyle = COLOR.title;
-  ctx.font = "bold 32px sans-serif";
+  ctx.font = "bold 28px sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("Warrior — Skill Tree", 24, 46);
+  ctx.fillText("Warrior — Skill Tree", 24, 42);
 
   // Legend (colour key) along the bottom.
-  ctx.font = "20px sans-serif";
+  ctx.font = "18px sans-serif";
   ctx.textBaseline = "middle";
   const legend: [string, string][] = [
     [COLOR.passive, "allocated"],

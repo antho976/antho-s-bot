@@ -33,26 +33,30 @@ const WARRIOR_TREE: SkillTree = {
   classId: "warrior",
   root: "root",
   // Skill nodes only (passive + active skills). The small %/stat "filler" moves to a separate
-  // Talents tree later — keeping this tree few-but-meaningful so the nodes render big + readable.
+  // Talents tree later — this tree stays meaningful-only, just denser now (10 + root).
   nodes: [
-    { id: "root", type: "root", name: "Warrior", desc: "Your beginning.", x: 380, y: 300 },
+    { id: "root", type: "root", name: "Warrior", desc: "Your beginning.", x: 390, y: 310 },
 
-    // Offense
-    { id: "o3", type: "notable", name: "Warlord", desc: "+10 Dmg, +5% Crit", x: 545, y: 215, effect: { damage: 10, critChance: 0.05 } },
-    { id: "o5", type: "notable", name: "Executioner", desc: "+50% Crit Dmg", x: 660, y: 130, effect: { critMult: 0.5 } },
+    // Offense (upper right)
+    { id: "o1", type: "notable", name: "Might", desc: "+12 Damage", x: 510, y: 250, effect: { damage: 12 } },
+    { id: "o2", type: "notable", name: "Warlord", desc: "+6% Crit", x: 610, y: 195, effect: { critChance: 0.06 } },
+    { id: "o3", type: "notable", name: "Executioner", desc: "+60% Crit Dmg", x: 710, y: 140, effect: { critMult: 0.6 } },
+    { id: "o4", type: "active", name: "Berserk", desc: "Active · Dungeons", x: 655, y: 295, ability: "berserk" },
 
-    // Defense
-    { id: "d3", type: "notable", name: "Ironhide", desc: "+6% Reduction", x: 215, y: 215, effect: { dmgReduction: 0.06 } },
-    { id: "d5", type: "active", name: "Shield Wall", desc: "Active · Dungeons", x: 105, y: 130, ability: "shield_wall" },
+    // Defense (upper left)
+    { id: "d1", type: "notable", name: "Toughness", desc: "+8% Reduction", x: 270, y: 250, effect: { dmgReduction: 0.08 } },
+    { id: "d2", type: "notable", name: "Footwork", desc: "+8% Dodge", x: 170, y: 195, effect: { dodge: 0.08 } },
+    { id: "d3", type: "active", name: "Shield Wall", desc: "Active · Dungeons", x: 80, y: 140, ability: "shield_wall" },
 
-    // Sustain
-    { id: "s2", type: "notable", name: "Bloodthirst", desc: "+8% Lifesteal", x: 380, y: 455, effect: { lifesteal: 0.08 } },
-    { id: "s3", type: "active", name: "Berserk", desc: "Active · Dungeons", x: 545, y: 500, ability: "berserk" },
+    // Sustain (lower)
+    { id: "s1", type: "notable", name: "Bloodthirst", desc: "+8% Lifesteal", x: 390, y: 420, effect: { lifesteal: 0.08 } },
+    { id: "s2", type: "notable", name: "Brawn", desc: "+10 Damage", x: 295, y: 500, effect: { damage: 10 } },
+    { id: "s3", type: "active", name: "Rampage", desc: "Active · Dungeons", x: 490, y: 500, ability: "rampage" },
   ],
   edges: [
-    ["root", "o3"], ["o3", "o5"],
-    ["root", "d3"], ["d3", "d5"],
-    ["root", "s2"], ["s2", "s3"],
+    ["root", "o1"], ["o1", "o2"], ["o2", "o3"], ["o2", "o4"],
+    ["root", "d1"], ["d1", "d2"], ["d2", "d3"],
+    ["root", "s1"], ["s1", "s2"], ["s1", "s3"],
   ],
 };
 
