@@ -41,7 +41,9 @@ export function renderCombat(player: RpgPlayer, user: User, now: number): RpgScr
 
   const legend = DIFFICULTIES.map((d) => {
     const locked = player.level < d.minLevel;
-    return `${locked ? "🔒" : d.emoji} **${d.label}**${locked ? ` — unlocked at Lv ${d.minLevel}` : ""}`;
+    const icon = locked ? "🔒" : d.emoji;
+    const note = locked ? ` (unlocks at Lv ${d.minLevel})` : "";
+    return `${icon} **${d.label}**: ${d.hint}${note}`;
   }).join("\n");
 
   const embed = new EmbedBuilder()
@@ -50,7 +52,7 @@ export function renderCombat(player: RpgPlayer, user: User, now: number): RpgScr
     .setDescription(
       [
         "Fight a roaming monster for **XP**, **gold** and the occasional **key**.",
-        "Tougher foes have more health and hit harder (scaled to your level) and pay out more — but **lose and you get nothing**.",
+        "Tougher foes have more health, hit harder, and pay out more. Lose and you get nothing.",
         "",
         legend,
         "",
@@ -60,15 +62,18 @@ export function renderCombat(player: RpgPlayer, user: User, now: number): RpgScr
       ].join("\n"),
     );
 
+  // No emoji on the buttons — the button colour already carries the difficulty, and a coloured
+  // circle on a same-coloured button just clashed. Locked Brutal shows a 🔒.
   const diffRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     ...DIFFICULTIES.map((d) => {
       const locked = player.level < d.minLevel;
-      return new ButtonBuilder()
+      const btn = new ButtonBuilder()
         .setCustomId(buildId(user.id, "combat", "go", d.id))
         .setLabel(d.label)
-        .setEmoji(locked ? "🔒" : d.emoji)
         .setStyle(BUTTON_STYLE[d.style])
         .setDisabled(!ready || locked);
+      if (locked) btn.setEmoji("🔒");
+      return btn;
     }),
   );
 
@@ -82,7 +87,7 @@ export function renderAdventureResult(report: AdventureReport, user: User): RpgS
 
   if (report.defeated) {
     lines = [
-      `💀 The ${mob.emoji} **${mob.name}** (${difficulty.label}) bested you — **no rewards**.`,
+      `💀 The ${mob.emoji} **${mob.name}** (${difficulty.label}) bested you. **No rewards.**`,
       `❤️ HP: **${report.hp}** / ${report.maxHp}`,
     ];
   } else {
@@ -94,7 +99,7 @@ export function renderAdventureResult(report: AdventureReport, user: User): RpgS
     ];
     if (report.keys > 0) lines.push("🗝️ Found a **key**!");
     if (report.leveledTo) lines.push(`🎉 **Level up!** You're now level **${report.leveledTo}**.`);
-    lines.push(`❤️ Took ${report.hpLost} damage — HP **${report.hp}** / ${report.maxHp}`);
+    lines.push(`❤️ Took ${report.hpLost} damage. HP **${report.hp}** / ${report.maxHp}`);
   }
 
   const embed = new EmbedBuilder()

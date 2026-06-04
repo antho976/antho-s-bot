@@ -44,6 +44,7 @@ export const MOBS: Mob[] = [
 export type Difficulty = {
   id: string;
   label: string;
+  hint: string; // one-line legend blurb
   emoji: string;
   style: "primary" | "secondary" | "success" | "danger";
   hpMult: number; // mob health
@@ -55,10 +56,10 @@ export type Difficulty = {
 };
 
 export const DIFFICULTIES: Difficulty[] = [
-  { id: "easy", label: "Easy", emoji: "🟢", style: "success", hpMult: 0.6, dmgMult: 0.6, xpMult: 0.7, goldMult: 0.7, keyChance: 0.15, minLevel: 1 },
-  { id: "normal", label: "Normal", emoji: "🟡", style: "primary", hpMult: 1.0, dmgMult: 1.0, xpMult: 1.0, goldMult: 1.0, keyChance: 0.25, minLevel: 1 },
-  { id: "hard", label: "Hard", emoji: "🔴", style: "danger", hpMult: 1.5, dmgMult: 1.4, xpMult: 1.6, goldMult: 1.6, keyChance: 0.45, minLevel: 1 },
-  { id: "brutal", label: "Brutal", emoji: "🟣", style: "danger", hpMult: 2.2, dmgMult: 1.9, xpMult: 2.5, goldMult: 2.5, keyChance: 0.65, minLevel: 10 },
+  { id: "easy", label: "Easy", hint: "safest, least loot", emoji: "🟢", style: "success", hpMult: 0.6, dmgMult: 0.6, xpMult: 0.7, goldMult: 0.7, keyChance: 0.15, minLevel: 1 },
+  { id: "normal", label: "Normal", hint: "a fair fight", emoji: "🟡", style: "primary", hpMult: 1.0, dmgMult: 1.0, xpMult: 1.0, goldMult: 1.0, keyChance: 0.25, minLevel: 1 },
+  { id: "hard", label: "Hard", hint: "risky, better loot", emoji: "🔴", style: "danger", hpMult: 1.5, dmgMult: 1.4, xpMult: 1.6, goldMult: 1.6, keyChance: 0.45, minLevel: 1 },
+  { id: "brutal", label: "Brutal", hint: "deadly, best loot", emoji: "🟣", style: "danger", hpMult: 2.2, dmgMult: 1.9, xpMult: 2.5, goldMult: 2.5, keyChance: 0.65, minLevel: 10 },
 ];
 
 export const DIFFICULTY_MAP: Record<string, Difficulty> = Object.fromEntries(

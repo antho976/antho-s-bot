@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type User } from "discord.js";
 import { HUB_CATEGORIES, RPG } from "../config";
 import { buildId } from "../domain/custom-id";
-import { classDef, maxHp, xpBar, xpForLevel } from "../domain/stats";
+import { classDef, maxHp, xpForLevel } from "../domain/stats";
 import type { RpgPlayer } from "../queries";
 import type { RpgScreen } from "./types";
 
@@ -47,7 +47,6 @@ export function renderHub(player: RpgPlayer, user: User): RpgScreen {
       {
         name: "📊  Progress",
         value: [
-          xpBar(player.xp, needed, 18),
           `XP: **${player.xp.toLocaleString()}** / ${needed.toLocaleString()}`,
           `HP: **${player.hp.toLocaleString()}** / ${maxHp(cls, player.level).toLocaleString()}`,
         ].join("\n"),
