@@ -136,6 +136,7 @@ export const INTRO_LORE = [
 export const HUB_CATEGORIES = [
   { view: "combat", label: "Combat", emoji: "⚔️", style: "danger" },
   { view: "inventory", label: "Inventory", emoji: "🎒", style: "primary" },
+  { view: "skills", label: "Skills", emoji: "🌳", style: "success" },
   { view: "guild", label: "Guild", emoji: "🏰", style: "success" },
   { view: "quests", label: "Quests", emoji: "📜", style: "primary" },
   { view: "options", label: "Options", emoji: "⚙️", style: "secondary" },

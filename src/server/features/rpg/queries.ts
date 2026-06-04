@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/server/db";
-import { rpgConfig, rpgInventory, rpgPlayers } from "./schema";
+import { rpgConfig, rpgInventory, rpgPlayers, rpgPlayerSkills } from "./schema";
 import { classDef, maxHp } from "./domain/stats";
 
 export type RpgPlayer = typeof rpgPlayers.$inferSelect;
@@ -45,7 +45,24 @@ export async function updatePlayer(id: number, patch: PlayerPatch): Promise<void
 /** Permanently delete a character and everything it owns. */
 export async function deletePlayer(playerId: number): Promise<void> {
   await db.delete(rpgInventory).where(eq(rpgInventory.playerId, playerId));
+  await db.delete(rpgPlayerSkills).where(eq(rpgPlayerSkills.playerId, playerId));
   await db.delete(rpgPlayers).where(eq(rpgPlayers.id, playerId));
+}
+
+export async function getAllocatedNodeIds(playerId: number): Promise<string[]> {
+  const rows = await db
+    .select({ nodeId: rpgPlayerSkills.nodeId })
+    .from(rpgPlayerSkills)
+    .where(eq(rpgPlayerSkills.playerId, playerId));
+  return rows.map((r) => r.nodeId);
+}
+
+export async function allocateNode(playerId: number, nodeId: string): Promise<void> {
+  await db.insert(rpgPlayerSkills).values({ playerId, nodeId }).onConflictDoNothing();
+}
+
+export async function respecSkills(playerId: number): Promise<void> {
+  await db.delete(rpgPlayerSkills).where(eq(rpgPlayerSkills.playerId, playerId));
 }
 
 /**

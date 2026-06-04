@@ -2,7 +2,16 @@ import type { Message } from "discord.js";
 import { RPG, type Difficulty, type Mob } from "./config";
 import { applyXp, pickMob, resolveFight, rollRewards } from "./domain/adventure";
 import { applyRegen, classDef, maxHp } from "./domain/stats";
-import { addItem, updatePlayer, type RpgPlayer } from "./queries";
+import { computeStats } from "./skills/compute";
+import { isAllocatable } from "./skills/graph";
+import { getTree } from "./skills/trees";
+import {
+  addItem,
+  allocateNode,
+  getAllocatedNodeIds,
+  updatePlayer,
+  type RpgPlayer,
+} from "./queries";
 
 /** Apply lazy regen on load and persist it if anything changed. Returns the up-to-date player. */
 export async function withRegen(player: RpgPlayer): Promise<RpgPlayer> {
@@ -46,8 +55,10 @@ export async function runAdventure(
   if (remaining > 0) return { ok: false, remainingMs: remaining };
 
   const cls = classDef(player.classId);
+  const allocated = await getAllocatedNodeIds(player.id);
+  const stats = computeStats(player.classId, player.level, allocated);
   const mob = pickMob(player.level);
-  const fight = resolveFight(cls, player.level, player.hp, difficulty);
+  const fight = resolveFight(stats, player.hp, player.level, difficulty);
 
   if (fight.defeated) {
     const patch = { hp: 1, lastAdventureAt: new Date(now) };
@@ -104,6 +115,18 @@ export async function runAdventure(
       leveledTo,
     },
   };
+}
+
+/** Allocate a skill node if it's reachable (PoE pathing) and a point is free. No-op otherwise. */
+export async function allocateSkill(player: RpgPlayer, nodeId: string): Promise<void> {
+  const tree = getTree(player.classId);
+  if (!tree) return;
+  const stored = await getAllocatedNodeIds(player.id);
+  if (stored.includes(nodeId)) return;
+  if (player.level - stored.length <= 0) return; // no points free
+  const allocated = new Set([tree.root, ...stored]);
+  if (!isAllocatable(tree, allocated, nodeId)) return;
+  await allocateNode(player.id, nodeId);
 }
 
 /**

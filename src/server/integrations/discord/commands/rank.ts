@@ -1,7 +1,8 @@
-import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
+import { EmbedBuilder, SlashCommandBuilder, type APIEmbedField } from "discord.js";
 import type { BotCommand } from "./types";
 import { ensureGuild } from "./guard";
 import { progressFromXp } from "@/server/features/leveling/domain/curve";
+import { fmtMinutes, progressBar } from "@/server/features/leveling/domain/format";
 import {
   getConfig,
   getLevelRow,
@@ -28,25 +29,33 @@ export const rank: BotCommand = {
     const xp = row?.xp ?? 0;
     const p = progressFromXp(xp, c, custom);
     const [rankPos, total] = await Promise.all([xpRank(guildId, xp), rankedMemberCount(guildId)]);
-    const pct = p.needed > 0 ? Math.round((p.into / p.needed) * 100) : 0;
+    const pct = p.needed > 0 ? Math.round((p.into / p.needed) * 100) : 100;
+
+    const fields: APIEmbedField[] = [
+      { name: "🏆 Rank", value: `#${rankPos}${total ? ` / ${total}` : ""}`, inline: true },
+      { name: "⭐ Total XP", value: xp.toLocaleString(), inline: true },
+    ];
+    if (row && row.prestige > 0) {
+      fields.push({ name: "✨ Prestige", value: `${row.prestige}`, inline: true });
+    }
+    fields.push(
+      { name: "💬 Messages", value: (row?.messages ?? 0).toLocaleString(), inline: true },
+      { name: "🎙️ Voice", value: fmtMinutes(row?.voiceMinutes ?? 0), inline: true },
+    );
 
     const embed = new EmbedBuilder()
-      .setColor(0x3b82f6)
+      .setColor(0x5865f2)
       .setAuthor({
         name: target.displayName ?? target.username,
         iconURL: target.displayAvatarURL(),
       })
+      .setThumbnail(target.displayAvatarURL())
       .setTitle(`Level ${p.level}`)
       .setDescription(
-        `**Rank** #${rankPos}${total ? ` of ${total}` : ""}\n` +
-          `**Progress** ${p.into.toLocaleString()} / ${p.needed.toLocaleString()} XP to next level (${pct}%)\n` +
-          `**Total XP** ${xp.toLocaleString()}` +
-          (row && row.prestige > 0 ? `\n**Prestige** ${row.prestige}` : ""),
+        `\`${progressBar(pct)}\` **${pct}%**\n` +
+          `**${p.into.toLocaleString()}** / **${p.needed.toLocaleString()}** XP to level ${p.level + 1}`,
       )
-      .addFields(
-        { name: "Messages", value: (row?.messages ?? 0).toLocaleString(), inline: true },
-        { name: "Voice", value: `${(row?.voiceMinutes ?? 0).toLocaleString()} min`, inline: true },
-      );
+      .addFields(fields);
 
     await interaction.reply({ embeds: [embed], allowedMentions: { parse: [] } });
   },

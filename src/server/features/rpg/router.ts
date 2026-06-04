@@ -2,13 +2,20 @@ import type { ButtonInteraction, StringSelectMenuInteraction } from "discord.js"
 import { track } from "@/server/core/analytics";
 import { CLASSES, DEFAULT_CLASS, DIFFICULTY_MAP } from "./config";
 import { parseId } from "./domain/custom-id";
-import { createPlayer, deletePlayer, getPlayer } from "./queries";
-import { runAdventure, withRegen } from "./service";
+import {
+  createPlayer,
+  deletePlayer,
+  getAllocatedNodeIds,
+  getPlayer,
+  respecSkills,
+} from "./queries";
+import { allocateSkill, runAdventure, withRegen } from "./service";
 import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderHub } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
 import { renderDeleteConfirm, renderOptions } from "./views/options";
 import { renderPlaceholder } from "./views/scaffold";
+import { renderSkills } from "./views/skills";
 import type { RpgScreen } from "./views/types";
 
 type RpgComponent = ButtonInteraction | StringSelectMenuInteraction;
@@ -79,6 +86,15 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
         return { kind: "update", screen: renderAdventureResult(outcome.report, interaction.user) };
       }
       return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
+    }
+    case "skills": {
+      if (route.action === "alloc" && interaction.isStringSelectMenu()) {
+        await allocateSkill(fresh, interaction.values[0]);
+      } else if (route.action === "respec") {
+        await respecSkills(fresh.id);
+      }
+      const nodeIds = await getAllocatedNodeIds(fresh.id);
+      return { kind: "update", screen: renderSkills(fresh, interaction.user, nodeIds) };
     }
     case "options": {
       if (route.action === "delete") {

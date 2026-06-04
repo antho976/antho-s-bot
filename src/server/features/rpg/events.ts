@@ -54,7 +54,13 @@ export function registerRpgEvents(client: Client): void {
       const tContent = performance.now();
       try {
         if (resp?.kind === "update") {
-          await interaction.editReply(resp.screen);
+          // files/attachments explicit so the skill-tree image attaches and is cleared when you
+          // navigate to a view that has none.
+          await interaction.editReply({
+            ...resp.screen,
+            files: resp.screen.files ?? [],
+            attachments: [],
+          });
         } else if (resp?.kind === "reply") {
           await interaction.followUp({ content: resp.content, flags: MessageFlags.Ephemeral });
         }

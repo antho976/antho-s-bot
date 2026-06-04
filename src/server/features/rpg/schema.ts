@@ -58,3 +58,16 @@ export const rpgInventory = sqliteTable(
   },
   (t) => [index("rpg_inventory_player").on(t.playerId)],
 );
+
+/** Allocated skill-tree nodes (PoE-style). `nodeId` references the code tree (skills/trees). */
+export const rpgPlayerSkills = sqliteTable(
+  "rpg_player_skills",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    playerId: integer("player_id").notNull(),
+    nodeId: text("node_id").notNull(),
+    rank: integer("rank").notNull().default(1),
+    createdAt: ts("created_at").$defaultFn(now),
+  },
+  (t) => [uniqueIndex("rpg_player_skills_unique").on(t.playerId, t.nodeId)],
+);

@@ -50,6 +50,7 @@ export async function register(): Promise<void> {
     const client = getClient();
     if (client) {
       const { registerLevelingEvents } = await import("@/server/features/leveling/events");
+      const { registerLeaderboardEvents } = await import("@/server/features/leveling/leaderboard");
       const { registerWelcomeEvents } = await import("@/server/features/welcome/events");
       const { registerMemberLogEvents } = await import("@/server/features/member-logs/events");
       const { registerAutomodEvents } = await import("@/server/features/automod/events");
@@ -60,6 +61,7 @@ export async function register(): Promise<void> {
       const { registerPollEvents } = await import("@/server/features/polls/events");
       const { registerRpgEvents } = await import("@/server/features/rpg/events");
       registerLevelingEvents(client);
+      registerLeaderboardEvents(client);
       registerWelcomeEvents(client);
       registerMemberLogEvents(client);
       registerAutomodEvents(client);
