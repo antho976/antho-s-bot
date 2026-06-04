@@ -35,24 +35,31 @@ function categoryRows(ownerId: string): ActionRowBuilder<ButtonBuilder>[] {
 export function renderHub(player: RpgPlayer, user: User): RpgScreen {
   const cls = classDef(player.classId);
   const needed = xpForLevel(player.level);
-  const bar = xpBar(player.xp, needed, 18);
-  const avatar = user.displayAvatarURL({ size: 128 });
+  const name = player.name ?? user.displayName;
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setAuthor({ name: player.name ?? user.displayName, iconURL: avatar })
-    .setTitle(cls.name)
+    .setAuthor({
+      name: `${name} • Level ${player.level} • ${cls.name}`,
+      iconURL: user.displayAvatarURL({ size: 128 }),
+    })
     .addFields(
-      { name: "Level", value: `\`${player.level}\``, inline: true },
-      { name: "Health", value: `❤️ ${player.hp} / ${maxHp(cls, player.level)}`, inline: true },
-      { name: "Gold", value: `💰 ${player.gold.toLocaleString()}`, inline: true },
       {
-        name: "Experience",
-        value: `${bar}\n\`${player.xp.toLocaleString()} / ${needed.toLocaleString()} XP\``,
+        name: "📊  Progress",
+        value: [
+          xpBar(player.xp, needed, 18),
+          `XP: **${player.xp.toLocaleString()}** / ${needed.toLocaleString()}`,
+          `HP: **${player.hp.toLocaleString()}** / ${maxHp(cls, player.level).toLocaleString()}`,
+        ].join("\n"),
+        inline: false,
+      },
+      {
+        name: "💰  Resources",
+        value: `Gold: **${player.gold.toLocaleString()}**`,
         inline: false,
       },
     )
-    .setFooter({ text: cls.blurb });
+    .setTimestamp();
 
   return { embeds: [embed], components: categoryRows(user.id) };
 }
