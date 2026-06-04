@@ -4,6 +4,10 @@ services:
   - type: web
     name: anthos-bot
     runtime: docker
+    # US-East — closest to Discord's infra, ~50-100ms lower interaction latency than Oregon.
+    # Region is set only when a service is CREATED; Render can't move an existing service, so
+    # changing this means recreating the service (see MIGRATION.md). Fallback: ohio.
+    region: virginia
     plan: starter # ~$7/mo, always-on (free tier sleeps — bad for a bot)
     healthCheckPath: /
     disk:
