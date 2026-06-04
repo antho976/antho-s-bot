@@ -33,27 +33,27 @@ const WARRIOR_TREE: SkillTree = {
   classId: "warrior",
   root: "root",
   nodes: [
-    { id: "root", type: "root", name: "Warrior", desc: "Your beginning.", x: 360, y: 250 },
+    { id: "root", type: "root", name: "Warrior", desc: "Your beginning.", x: 430, y: 295 },
 
     // Offense (upper right)
-    { id: "o1", type: "minor", name: "Might", desc: "+3 Damage", x: 440, y: 230, effect: { damage: 3 } },
-    { id: "o2", type: "minor", name: "Might", desc: "+3 Damage", x: 510, y: 205, effect: { damage: 3 } },
-    { id: "o3", type: "notable", name: "Warlord", desc: "+10 Damage, +5% Crit", x: 585, y: 178, effect: { damage: 10, critChance: 0.05 } },
-    { id: "o4", type: "minor", name: "Edge", desc: "+2% Crit", x: 510, y: 278, effect: { critChance: 0.02 } },
-    { id: "o5", type: "notable", name: "Executioner", desc: "+50% Crit Damage", x: 590, y: 295, effect: { critMult: 0.5 } },
+    { id: "o1", type: "minor", name: "Might", desc: "+3 Damage", x: 530, y: 265, effect: { damage: 3 } },
+    { id: "o2", type: "minor", name: "Might", desc: "+3 Damage", x: 615, y: 230, effect: { damage: 3 } },
+    { id: "o3", type: "notable", name: "Warlord", desc: "+10 Damage, +5% Crit", x: 700, y: 195, effect: { damage: 10, critChance: 0.05 } },
+    { id: "o4", type: "minor", name: "Edge", desc: "+2% Crit", x: 615, y: 320, effect: { critChance: 0.02 } },
+    { id: "o5", type: "notable", name: "Executioner", desc: "+50% Crit Damage", x: 710, y: 350, effect: { critMult: 0.5 } },
 
     // Defense (upper left)
-    { id: "d1", type: "minor", name: "Guard", desc: "+2% Damage Reduction", x: 280, y: 230, effect: { dmgReduction: 0.02 } },
-    { id: "d2", type: "minor", name: "Footwork", desc: "+2% Dodge", x: 210, y: 205, effect: { dodge: 0.02 } },
-    { id: "d3", type: "notable", name: "Ironhide", desc: "+6% Damage Reduction", x: 135, y: 178, effect: { dmgReduction: 0.06 } },
-    { id: "d4", type: "minor", name: "Guard", desc: "+2% Damage Reduction", x: 210, y: 278, effect: { dmgReduction: 0.02 } },
-    { id: "d5", type: "active", name: "Shield Wall", desc: "Active · used in Dungeons", x: 130, y: 295, ability: "shield_wall" },
+    { id: "d1", type: "minor", name: "Guard", desc: "+2% Damage Reduction", x: 330, y: 265, effect: { dmgReduction: 0.02 } },
+    { id: "d2", type: "minor", name: "Footwork", desc: "+2% Dodge", x: 245, y: 230, effect: { dodge: 0.02 } },
+    { id: "d3", type: "notable", name: "Ironhide", desc: "+6% Damage Reduction", x: 160, y: 195, effect: { dmgReduction: 0.06 } },
+    { id: "d4", type: "minor", name: "Guard", desc: "+2% Damage Reduction", x: 245, y: 320, effect: { dmgReduction: 0.02 } },
+    { id: "d5", type: "active", name: "Shield Wall", desc: "Active · used in Dungeons", x: 165, y: 350, ability: "shield_wall" },
 
     // Sustain (lower)
-    { id: "s1", type: "minor", name: "Leech", desc: "+3% Lifesteal", x: 360, y: 330, effect: { lifesteal: 0.03 } },
-    { id: "s2", type: "notable", name: "Bloodthirst", desc: "+8% Lifesteal", x: 360, y: 400, effect: { lifesteal: 0.08 } },
-    { id: "s3", type: "active", name: "Berserk", desc: "Active · used in Dungeons", x: 280, y: 395, ability: "berserk" },
-    { id: "s4", type: "minor", name: "Brawn", desc: "+4 Damage", x: 440, y: 395, effect: { damage: 4 } },
+    { id: "s1", type: "minor", name: "Leech", desc: "+3% Lifesteal", x: 430, y: 385, effect: { lifesteal: 0.03 } },
+    { id: "s2", type: "notable", name: "Bloodthirst", desc: "+8% Lifesteal", x: 430, y: 485, effect: { lifesteal: 0.08 } },
+    { id: "s3", type: "active", name: "Berserk", desc: "Active · used in Dungeons", x: 310, y: 470, ability: "berserk" },
+    { id: "s4", type: "minor", name: "Brawn", desc: "+4 Damage", x: 540, y: 470, effect: { damage: 4 } },
   ],
   edges: [
     ["root", "o1"], ["o1", "o2"], ["o2", "o3"], ["o1", "o4"], ["o4", "o5"],

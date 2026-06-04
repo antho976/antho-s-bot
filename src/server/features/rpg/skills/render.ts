@@ -1,13 +1,14 @@
 // Canvas render of the skill tree: edges as lines, nodes as circles (actives as diamonds),
-// coloured by state (allocated / allocatable frontier / locked). Plain shapes — no emoji — so it
-// renders anywhere. The select menu carries node names; the image carries the shape + progress.
+// coloured by state (allocated / allocatable frontier / locked). Fonts are large because Discord
+// downscales the embed image — small text turns to mush. Only landmark nodes (notable/active) are
+// labelled; minor "filler" nodes are dots, their names live in the allocate menu.
 import { createCanvas, type SKRSContext2D } from "@napi-rs/canvas";
 import { AttachmentBuilder } from "discord.js";
 import { frontier } from "./graph";
 import { nodeById, type SkillNode, type SkillTree } from "./trees";
 
-const W = 720;
-const H = 520;
+const W = 860;
+const H = 600;
 
 const COLOR = {
   bg: "#1e1f22",
@@ -20,7 +21,8 @@ const COLOR = {
   passive: "#f1c40f",
   active: "#9b59b6",
   allocatedBorder: "#f7dc6f",
-  label: "#cdd0d6",
+  label: "#e6e8eb",
+  labelShadow: "#101114",
   title: "#ffffff",
 };
 
@@ -33,12 +35,21 @@ function diamond(ctx: SKRSContext2D, x: number, y: number, r: number): void {
   ctx.closePath();
 }
 
+/** Text with a dark outline so it stays legible over edges/nodes. */
+function outlinedText(ctx: SKRSContext2D, text: string, x: number, y: number): void {
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = COLOR.labelShadow;
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = COLOR.label;
+  ctx.fillText(text, x, y);
+}
+
 function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: boolean): void {
   const big = n.type !== "minor";
-  const r = big ? 15 : 9;
+  const r = big ? 18 : 11;
 
   ctx.fillStyle = allocated ? (n.type === "active" ? COLOR.active : COLOR.passive) : front ? COLOR.frontier : COLOR.locked;
-  ctx.lineWidth = front ? 3 : 2;
+  ctx.lineWidth = front ? 4 : 3;
   ctx.strokeStyle = front ? COLOR.frontierBorder : allocated ? COLOR.allocatedBorder : COLOR.lockedBorder;
 
   if (n.type === "active") diamond(ctx, n.x, n.y, r);
@@ -49,11 +60,11 @@ function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: b
   ctx.fill();
   ctx.stroke();
 
-  if (big) {
-    ctx.fillStyle = COLOR.label;
-    ctx.font = "12px sans-serif";
+  // Label only the landmarks (notables + actives); minors are explained in the menu.
+  if (n.type === "notable" || n.type === "active") {
+    ctx.font = "bold 20px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(n.name, n.x, n.y + r + 14);
+    outlinedText(ctx, n.name, n.x, n.y + r + 24);
   }
 }
 
@@ -71,7 +82,7 @@ export function renderTreeImage(tree: SkillTree, allocated: Set<string>): Attach
     if (!na || !nb) continue;
     const on = allocated.has(a) && allocated.has(b);
     ctx.strokeStyle = on ? COLOR.edgeOn : COLOR.edge;
-    ctx.lineWidth = on ? 4 : 2;
+    ctx.lineWidth = on ? 5 : 3;
     ctx.beginPath();
     ctx.moveTo(na.x, na.y);
     ctx.lineTo(nb.x, nb.y);
@@ -81,29 +92,34 @@ export function renderTreeImage(tree: SkillTree, allocated: Set<string>): Attach
   const front = frontier(tree, allocated);
   for (const n of tree.nodes) drawNode(ctx, n, allocated.has(n.id), front.has(n.id));
 
-  // Header + legend.
+  // Title.
   ctx.fillStyle = COLOR.title;
-  ctx.font = "bold 18px sans-serif";
+  ctx.font = "bold 28px sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("Warrior — Skill Tree", 18, 30);
+  ctx.fillText("Warrior — Skill Tree", 24, 42);
 
-  ctx.font = "12px sans-serif";
+  // Legend (colour key) along the bottom.
+  ctx.font = "18px sans-serif";
+  ctx.textBaseline = "middle";
   const legend: [string, string][] = [
     [COLOR.passive, "allocated"],
     [COLOR.frontierBorder, "available"],
     [COLOR.lockedBorder, "locked"],
     [COLOR.active, "active (Dungeons)"],
   ];
-  let lx = 18;
+  let lx = 24;
+  const ly = H - 26;
   for (const [color, text] of legend) {
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(lx + 6, H - 18, 6, 0, Math.PI * 2);
+    ctx.arc(lx + 9, ly, 9, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = COLOR.label;
-    ctx.fillText(text, lx + 16, H - 14);
-    lx += 30 + ctx.measureText(text).width;
+    ctx.textAlign = "left";
+    ctx.fillText(text, lx + 24, ly);
+    lx += 42 + ctx.measureText(text).width;
   }
+  ctx.textBaseline = "alphabetic";
 
   return new AttachmentBuilder(canvas.toBuffer("image/png"), { name: "skill-tree.png" });
 }
