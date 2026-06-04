@@ -8,7 +8,26 @@ export const RPG = {
   regenIntervalMs: 5 * 60_000, // one hp regen tick every 5 min, computed lazily on read
   hpPerTick: 5,
   embedColor: 0x8b5cf6, // violet-500
+
+  // Adventure: the basic combat grind (poll picked 1–5 min → 3). Light by design — XP + the odd
+  // key. Real difficulty/rewards live in dungeons later (planning/11).
+  adventureCooldownMs: 3 * 60_000,
+  adventureXpBase: 8,
+  adventureXpPerLevel: 4,
+  keyDropChance: 0.25,
 } as const;
+
+/** A roaming monster you can fight on an Adventure. `level` scales rewards + gates who you meet. */
+export type Mob = { name: string; emoji: string; level: number };
+
+export const MOBS: Mob[] = [
+  { name: "Slime", emoji: "🟢", level: 1 },
+  { name: "Giant Rat", emoji: "🐀", level: 2 },
+  { name: "Goblin", emoji: "👺", level: 3 },
+  { name: "Wild Boar", emoji: "🐗", level: 5 },
+  { name: "Bandit", emoji: "🗡️", level: 7 },
+  { name: "Skeleton", emoji: "💀", level: 10 },
+];
 
 export type ClassDef = {
   id: string;

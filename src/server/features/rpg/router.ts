@@ -3,7 +3,8 @@ import { track } from "@/server/core/analytics";
 import { DEFAULT_CLASS } from "./config";
 import { parseId } from "./domain/custom-id";
 import { createPlayer, getPlayer } from "./queries";
-import { withRegen } from "./service";
+import { runAdventure, withRegen } from "./service";
+import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderHub } from "./views/hub";
 import { renderPlaceholder, renderWelcome } from "./views/scaffold";
 
@@ -49,7 +50,32 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<voi
     case "hub":
       await interaction.update(renderHub(fresh, interaction.user));
       return;
-    case "combat":
+    case "combat": {
+      if (route.action === "go") {
+        const outcome = await runAdventure(fresh);
+        if (!outcome.ok) {
+          await interaction.update(renderCombat(fresh, interaction.user, Date.now()));
+          return;
+        }
+        await track(guildId, "rpg_adventure", {
+          level: outcome.player.level,
+          gotKey: outcome.rewards.keys > 0,
+          leveled: outcome.leveledTo != null,
+        });
+        await interaction.update(
+          renderAdventureResult(
+            outcome.player,
+            interaction.user,
+            outcome.mob,
+            outcome.rewards,
+            outcome.leveledTo,
+          ),
+        );
+        return;
+      }
+      await interaction.update(renderCombat(fresh, interaction.user, Date.now()));
+      return;
+    }
     case "inventory":
     case "guild":
     case "shop":

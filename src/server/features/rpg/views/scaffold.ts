@@ -1,7 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type User } from "discord.js";
 import { HUB_CATEGORIES, RPG } from "../config";
 import { buildId } from "../domain/custom-id";
-import { SPACER_URL, spacerFile } from "./spacer";
 import type { RpgScreen } from "./types";
 
 /** Shown by /rpg when the user has no character yet. The Start button creates one. */
@@ -11,8 +10,7 @@ export function renderWelcome(user: User): RpgScreen {
     .setTitle("⚔️  Begin your adventure")
     .setDescription(
       `Welcome, **${user.displayName}**.\nCreate your character to open your adventure hub.`,
-    )
-    .setImage(SPACER_URL);
+    );
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "create"))
@@ -20,7 +18,7 @@ export function renderWelcome(user: User): RpgScreen {
       .setEmoji("✨")
       .setStyle(ButtonStyle.Success),
   );
-  return { embeds: [embed], components: [row], files: [spacerFile()] };
+  return { embeds: [embed], components: [row] };
 }
 
 /** Temporary view for categories not built yet — keeps navigation working end to end (Slice 1). */
@@ -29,8 +27,7 @@ export function renderPlaceholder(ownerId: string, view: string, _user: User): R
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
     .setTitle(`${cat?.emoji ?? "🚧"}  ${cat?.label ?? "Coming soon"}`)
-    .setDescription("This area isn't built yet — check back soon.")
-    .setImage(SPACER_URL);
+    .setDescription("This area isn't built yet — check back soon.");
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(buildId(ownerId, "hub"))
@@ -38,5 +35,5 @@ export function renderPlaceholder(ownerId: string, view: string, _user: User): R
       .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),
   );
-  return { embeds: [embed], components: [row], files: [spacerFile()] };
+  return { embeds: [embed], components: [row] };
 }

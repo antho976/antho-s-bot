@@ -3,7 +3,6 @@ import { HUB_CATEGORIES, RPG } from "../config";
 import { buildId } from "../domain/custom-id";
 import { classDef, maxHp, xpBar, xpForLevel } from "../domain/stats";
 import type { RpgPlayer } from "../queries";
-import { SPACER_URL, spacerFile } from "./spacer";
 import type { RpgScreen } from "./types";
 
 /** Category `style` token → Discord button color. */
@@ -53,8 +52,7 @@ export function renderHub(player: RpgPlayer, user: User): RpgScreen {
         inline: false,
       },
     )
-    .setImage(SPACER_URL)
     .setFooter({ text: cls.blurb });
 
-  return { embeds: [embed], components: categoryRows(user.id), files: [spacerFile()] };
+  return { embeds: [embed], components: categoryRows(user.id) };
 }

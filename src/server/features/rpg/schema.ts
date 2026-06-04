@@ -30,7 +30,9 @@ export const rpgPlayers = sqliteTable(
     xp: integer("xp").notNull().default(0),
     hp: integer("hp").notNull().default(0),
     gold: integer("gold").notNull().default(0),
+    keys: integer("keys").notNull().default(0),
     lastRegenAt: ts("last_regen_at"),
+    lastAdventureAt: ts("last_adventure_at"), // adventure cooldown (lazy check, no timer)
     lastHubChannelId: text("last_hub_channel_id"),
     lastHubMessageId: text("last_hub_message_id"),
     createdAt: ts("created_at").$defaultFn(now),
