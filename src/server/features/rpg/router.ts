@@ -39,7 +39,7 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
   if (route.view === "create") {
     const existing = await getPlayer(guildId, interaction.user.id);
     const player = existing ?? (await createPlayer(guildId, interaction.user.id, DEFAULT_CLASS));
-    if (!existing) await track(guildId, "rpg_character_created", { classId: DEFAULT_CLASS });
+    if (!existing) void track(guildId, "rpg_character_created", { classId: DEFAULT_CLASS });
     return { kind: "update", screen: renderHub(player, interaction.user) };
   }
 
@@ -56,7 +56,7 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
         if (!outcome.ok) {
           return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
         }
-        await track(guildId, "rpg_adventure", {
+        void track(guildId, "rpg_adventure", {
           level: outcome.player.level,
           gotKey: outcome.rewards.keys > 0,
           leveled: outcome.leveledTo != null,
