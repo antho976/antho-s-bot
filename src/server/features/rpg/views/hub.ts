@@ -74,7 +74,7 @@ export function renderPlayer(player: RpgPlayer, user: User): RpgScreen {
       name: `${name} • Level ${player.level} • ${cls.name}`,
       iconURL: user.displayAvatarURL({ size: 128 }),
     })
-    .setDescription("Check your pack or spend your skill points.");
+    .setDescription("Check your pack, spend skill points, or visit the Blacksmith.");
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
@@ -87,6 +87,11 @@ export function renderPlayer(player: RpgPlayer, user: User): RpgScreen {
       .setLabel("Skills")
       .setEmoji("🌳")
       .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "smith"))
+      .setLabel("Blacksmith")
+      .setEmoji("🔨")
+      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "hub"))
       .setLabel("Back")

@@ -7,6 +7,7 @@ import {
   rpgInventory,
   rpgPlayers,
   rpgPlayerSkills,
+  rpgProfessions,
 } from "./schema";
 import { classDef, maxHp } from "./domain/stats";
 
@@ -106,6 +107,77 @@ export type RpgInventoryRow = typeof rpgInventory.$inferSelect;
 /** Every inventory row a player owns (resources + items). */
 export function listInventory(playerId: number): Promise<RpgInventoryRow[]> {
   return db.select().from(rpgInventory).where(eq(rpgInventory.playerId, playerId));
+}
+
+export async function getInventoryRow(id: number): Promise<RpgInventoryRow | null> {
+  const rows = await db.select().from(rpgInventory).where(eq(rpgInventory.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateInventoryRow(
+  id: number,
+  patch: Partial<typeof rpgInventory.$inferInsert>,
+): Promise<void> {
+  await db.update(rpgInventory).set({ ...patch, updatedAt: new Date() }).where(eq(rpgInventory.id, id));
+}
+
+/** Insert a unique (non-stacking) instance, e.g. a crafted weapon. Returns the new row. */
+export async function insertInstance(
+  playerId: number,
+  itemId: string,
+  instanceStatsJson: string,
+): Promise<RpgInventoryRow> {
+  const [row] = await db
+    .insert(rpgInventory)
+    .values({ playerId, itemId, qty: 1, instanceStatsJson })
+    .returning();
+  return row;
+}
+
+/** Remove `qty` of a stackable item (decrement, deleting the row when it hits zero). */
+export async function removeItemQty(playerId: number, itemId: string, qty: number): Promise<void> {
+  if (qty <= 0) return;
+  const rows = await db
+    .select()
+    .from(rpgInventory)
+    .where(
+      and(
+        eq(rpgInventory.playerId, playerId),
+        eq(rpgInventory.itemId, itemId),
+        isNull(rpgInventory.instanceStatsJson),
+      ),
+    )
+    .limit(1);
+  const row = rows[0];
+  if (!row) return;
+  const left = row.qty - qty;
+  if (left > 0) {
+    await db.update(rpgInventory).set({ qty: left, updatedAt: new Date() }).where(eq(rpgInventory.id, row.id));
+  } else {
+    await db.delete(rpgInventory).where(eq(rpgInventory.id, row.id));
+  }
+}
+
+// --- Professions -----------------------------------------------------------------------------
+
+export async function getProfessionXp(playerId: number, profId: string): Promise<number> {
+  const rows = await db
+    .select()
+    .from(rpgProfessions)
+    .where(and(eq(rpgProfessions.playerId, playerId), eq(rpgProfessions.profId, profId)))
+    .limit(1);
+  return rows[0]?.xp ?? 0;
+}
+
+export async function addProfessionXp(playerId: number, profId: string, xp: number): Promise<void> {
+  if (xp <= 0) return;
+  await db
+    .insert(rpgProfessions)
+    .values({ playerId, profId, xp })
+    .onConflictDoUpdate({
+      target: [rpgProfessions.playerId, rpgProfessions.profId],
+      set: { xp: sql`${rpgProfessions.xp} + ${xp}`, updatedAt: new Date() },
+    });
 }
 
 // --- Gathering -------------------------------------------------------------------------------

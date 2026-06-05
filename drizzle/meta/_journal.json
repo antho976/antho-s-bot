@@ -162,6 +162,13 @@
       "when": 1780629078083,
       "tag": "0022_dusty_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1780691070308,
+      "tag": "0023_mean_talisman",
+      "breakpoints": true
     }
   ]
 }

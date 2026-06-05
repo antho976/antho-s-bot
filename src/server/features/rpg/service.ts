@@ -2,6 +2,7 @@ import type { Message } from "discord.js";
 import { DEV_TOOLS } from "@/env";
 import { RPG, type Difficulty, type Mob } from "./config";
 import { applyXp, pickMob, resolveFight, rollRewards } from "./domain/adventure";
+import { equippedWeaponDamage } from "./blacksmith";
 import { applyRegen, classDef, maxHp } from "./domain/stats";
 import { computeStats } from "./skills/compute";
 import { isAllocatable } from "./skills/graph";
@@ -58,6 +59,7 @@ export async function runAdventure(
   const cls = classDef(player.classId);
   const allocated = await getAllocatedNodeIds(player.id);
   const stats = computeStats(player.classId, player.level, allocated);
+  stats.damage += await equippedWeaponDamage(player); // the equipped-weapon seam, now filled
   const mob = pickMob(player.level);
   const fight = resolveFight(stats, player.hp, player.level, difficulty);
 

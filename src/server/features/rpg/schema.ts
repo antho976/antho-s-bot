@@ -30,6 +30,7 @@ export const rpgPlayers = sqliteTable(
     xp: integer("xp").notNull().default(0),
     hp: integer("hp").notNull().default(0),
     gold: integer("gold").notNull().default(0),
+    equippedWeaponId: integer("equipped_weapon_id"), // rpg_inventory.id of the equipped weapon (null = none)
     toolTier: integer("tool_tier").notNull().default(0), // owned multitool tier (0 = bare hands)
     // Active idle-gathering session (one at a time). Drops are computed lazily on collect from
     // gatherStartedAt, no timer. Null skill/area = not gathering.
@@ -103,4 +104,18 @@ export const rpgGatherTalents = sqliteTable(
     rank: integer("rank").notNull().default(1),
   },
   (t) => [uniqueIndex("rpg_gather_talents_unique").on(t.playerId, t.skillId, t.nodeId)],
+);
+
+/** Per-profession XP (Blacksmithing, etc.). Level is derived from xp, like gathering. */
+export const rpgProfessions = sqliteTable(
+  "rpg_professions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    playerId: integer("player_id").notNull(),
+    profId: text("prof_id").notNull(),
+    xp: integer("xp").notNull().default(0),
+    createdAt: ts("created_at").$defaultFn(now),
+    updatedAt: ts("updated_at").$defaultFn(now),
+  },
+  (t) => [uniqueIndex("rpg_professions_player_prof").on(t.playerId, t.profId)],
 );

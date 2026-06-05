@@ -38,6 +38,23 @@ import {
 } from "./views/gather";
 import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderInventory } from "./views/inventory";
+import {
+  blacksmithLevel,
+  craftWeapon,
+  equipWeapon,
+  equippedWeapon,
+  getWeapon,
+  listWeapons,
+  materialCounts,
+  unequipWeapon,
+  upgradeWeapon,
+} from "./blacksmith";
+import {
+  renderBlacksmith,
+  renderCraft,
+  renderWeaponDetail,
+  renderWeapons,
+} from "./views/blacksmith";
 import { renderHub, renderPlayer } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
 import { renderDeleteConfirm, renderOptions } from "./views/options";
@@ -149,6 +166,8 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
     }
     case "gather":
       return handleGather(interaction, route, fresh, guildId);
+    case "smith":
+      return handleSmith(interaction, route, fresh, guildId);
     case "inventory": {
       const rows = await listInventory(fresh.id);
       return { kind: "update", screen: renderInventory(interaction.user, rows) };
@@ -258,4 +277,59 @@ async function gatherTalentsScreen(
   const level = gatherLevel(xp[skillId] ?? 0);
   const ranks = await talentRanksFor(player.id, skillId);
   return renderGatherTalents(user, skillId, level, ranks, notice);
+}
+
+/** Blacksmith sub-router: forge weapons, enhance them, and equip them. */
+async function handleSmith(
+  interaction: RpgComponent,
+  route: RpgRoute,
+  player: RpgPlayer,
+  guildId: string,
+): Promise<RpgResponse> {
+  const user = interaction.user;
+  const action = route.action;
+
+  if (action === "craft") {
+    const level = await blacksmithLevel(player.id);
+    return { kind: "update", screen: renderCraft(user, player, level, await materialCounts(player.id)) };
+  }
+  if (action === "weapons") {
+    return { kind: "update", screen: renderWeapons(user, await listWeapons(player)) };
+  }
+  if (action === "weapon" && interaction.isStringSelectMenu()) {
+    const weapon = await getWeapon(player, Number(interaction.values[0]));
+    return weapon
+      ? { kind: "update", screen: renderWeaponDetail(user, weapon, player) }
+      : { kind: "update", screen: renderWeapons(user, await listWeapons(player), "Weapon not found.") };
+  }
+
+  if (action === "make" && interaction.isStringSelectMenu()) {
+    const r = await craftWeapon(player, interaction.values[0]);
+    const level = await blacksmithLevel(player.id);
+    const counts = await materialCounts(player.id);
+    const notice = r.ok ? `Forged ${r.weaponName}!` : r.reason;
+    return { kind: "update", screen: renderCraft(user, player, level, counts, notice) };
+  }
+  if (action === "upgrade" && route.args) {
+    const r = await upgradeWeapon(player, Number(route.args));
+    const p2 = (await getPlayer(guildId, user.id)) ?? player;
+    const weapon = await getWeapon(p2, Number(route.args));
+    if (!weapon) return { kind: "update", screen: renderWeapons(user, await listWeapons(p2), r.reason) };
+    return { kind: "update", screen: renderWeaponDetail(user, weapon, p2, r.ok ? "Enhanced!" : r.reason) };
+  }
+  if ((action === "equip" || action === "unequip") && route.args) {
+    if (action === "equip") await equipWeapon(player, Number(route.args));
+    else await unequipWeapon(player);
+    const p2 = (await getPlayer(guildId, user.id)) ?? player;
+    const weapon = await getWeapon(p2, Number(route.args));
+    if (!weapon) return { kind: "update", screen: renderWeapons(user, await listWeapons(p2)) };
+    return {
+      kind: "update",
+      screen: renderWeaponDetail(user, weapon, p2, action === "equip" ? "Equipped." : "Unequipped."),
+    };
+  }
+
+  const level = await blacksmithLevel(player.id);
+  const equipped = await equippedWeapon(player);
+  return { kind: "update", screen: renderBlacksmith(user, player, level, equipped) };
 }

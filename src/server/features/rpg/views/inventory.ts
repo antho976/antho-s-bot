@@ -21,7 +21,7 @@ export function renderInventory(user: User, rows: RpgInventoryRow[]): RpgScreen 
   const items: string[] = [];
 
   for (const row of rows) {
-    if (row.qty <= 0) continue;
+    if (row.qty <= 0 || row.instanceStatsJson) continue; // weapons live in the Blacksmith screen
     const skill = RESOURCE_SKILL[row.itemId];
     if (skill && RESOURCES[row.itemId]) {
       const arr = bySkill.get(skill) ?? [];
