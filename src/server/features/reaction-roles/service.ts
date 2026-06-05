@@ -1,5 +1,7 @@
 import {
   EmbedBuilder,
+  type Guild,
+  type Message,
   type MessageReaction,
   type PartialMessageReaction,
   type PartialUser,
@@ -10,10 +12,12 @@ import { getClient } from "@/server/integrations/discord/client";
 import {
   addPairs,
   createPanel,
+  deletePairsByMessage,
   deletePanelRows,
   getPairsByMessage,
   getPanel,
   getPanelByMessage,
+  updatePanel,
   type Panel,
 } from "./queries";
 
@@ -23,10 +27,55 @@ export interface PairInput {
   label?: string;
 }
 
-/** Extract the storage/react key from a raw emoji string. */
+/** Extract the storage/react key from an emoji string: the id for a custom emoji, else the raw. */
 function parseEmoji(raw: string): string {
   const m = raw.match(/<a?:\w+:(\d+)>/);
   return m ? m[1] : raw.trim();
+}
+
+/**
+ * Turn what a user typed into a renderable emoji. A custom emoji entered as a shortcode (`:name:`),
+ * a bare name, or a bare id is resolved against the guild's emojis into `<:name:id>` (so it both
+ * renders in the panel and can be reacted with). Full `<:name:id>` and unicode emojis pass through.
+ */
+function resolveEmoji(raw: string, guild: Guild): string {
+  const s = raw.trim();
+  if (/^<a?:\w+:\d+>$/.test(s)) return s; // already a full custom emoji
+  if (/^\d+$/.test(s)) {
+    const byId = guild.emojis.cache.get(s);
+    return byId ? byId.toString() : s;
+  }
+  const name = s.match(/^:?([A-Za-z0-9_]+):?$/)?.[1];
+  if (name) {
+    const found = guild.emojis.cache.find((e) => e.name?.toLowerCase() === name.toLowerCase());
+    if (found) return found.toString();
+  }
+  return s; // unicode emoji, or an unknown name — leave as typed
+}
+
+function buildPanelEmbed(
+  title: string | undefined,
+  pairs: { emoji: string; roleId: string }[],
+): EmbedBuilder {
+  const description = pairs.map((p) => `${p.emoji} — <@&${p.roleId}>`).join("\n");
+  return new EmbedBuilder()
+    .setColor(0x6366f1)
+    .setTitle(title || "Reaction Roles")
+    .setDescription(description || "—");
+}
+
+/** Bring a message's reactions in line with the wanted set: drop stale ones, add missing ones. */
+async function syncReactions(message: Message, wantedKeys: string[]): Promise<void> {
+  const want = new Set(wantedKeys);
+  for (const reaction of message.reactions.cache.values()) {
+    const key = reaction.emoji.id ?? reaction.emoji.name;
+    if (key && !want.has(key)) await reaction.remove().catch(() => {});
+  }
+  for (const key of wantedKeys) {
+    if (!message.reactions.cache.has(key)) {
+      await message.react(key).catch((err) => logger.warn("reaction-roles", "Failed to react", err));
+    }
+  }
 }
 
 /** Post a reaction-role panel message, add the reactions, and store the mapping. */
@@ -45,26 +94,58 @@ export async function createReactionRolePanel(
     throw new Error("Target is not a text channel");
   }
 
-  const description = pairs.map((p) => `${p.emoji} — <@&${p.roleId}>`).join("\n");
-  const embed = new EmbedBuilder()
-    .setColor(0x6366f1)
-    .setTitle(title || "Reaction Roles")
-    .setDescription(description || "—");
-  const message = await channel.send({ embeds: [embed] });
+  // Resolve custom-emoji shortcodes (`:name:`) to `<:name:id>` so they render + can be reacted with.
+  const resolved = pairs.map((p) => ({ ...p, emoji: resolveEmoji(p.emoji, channel.guild) }));
+  const message = await channel.send({ embeds: [buildPanelEmbed(title, resolved)] });
 
   const panel = await createPanel({ guildId, channelId, messageId: message.id, title, mode });
   await addPairs(
-    pairs.map((p) => ({
+    resolved.map((p) => ({
       messageId: message.id,
-      emoji: parseEmoji(p.emoji),
+      emoji: p.emoji, // store the renderable form; matched via parseEmoji at react time
       roleId: p.roleId,
       label: p.label ?? null,
     })),
   );
-  for (const p of pairs) {
-    await message.react(parseEmoji(p.emoji)).catch(() => {});
-  }
+  await syncReactions(message, resolved.map((p) => parseEmoji(p.emoji)));
   return panel;
+}
+
+/** Edit an existing panel: update its message + reactions + stored mapping in place. */
+export async function editReactionRolePanel(
+  id: number,
+  title: string | undefined,
+  mode: string,
+  pairs: PairInput[],
+): Promise<Panel> {
+  const panel = await getPanel(id);
+  if (!panel) throw new Error("Panel not found");
+  const client = getClient();
+  if (!client) throw new Error("Bot is offline");
+
+  const channel = await client.channels.fetch(panel.channelId);
+  if (!channel || !channel.isTextBased() || channel.isDMBased()) {
+    throw new Error("Target is not a text channel");
+  }
+  const message = await channel.messages.fetch(panel.messageId).catch(() => null);
+  if (!message) throw new Error("The panel's message is gone — delete this panel and make a new one.");
+
+  const resolved = pairs.map((p) => ({ ...p, emoji: resolveEmoji(p.emoji, channel.guild) }));
+  await message.edit({ embeds: [buildPanelEmbed(title, resolved)] });
+
+  await updatePanel(id, { title: title ?? null, mode });
+  await deletePairsByMessage(panel.messageId);
+  await addPairs(
+    resolved.map((p) => ({
+      messageId: panel.messageId,
+      emoji: p.emoji,
+      roleId: p.roleId,
+      label: p.label ?? null,
+    })),
+  );
+  await syncReactions(message, resolved.map((p) => parseEmoji(p.emoji)));
+
+  return { ...panel, title: title ?? null, mode };
 }
 
 /** Delete the panel: remove the Discord message (best-effort) + DB rows. */
@@ -98,7 +179,7 @@ export async function handleReaction(
 
   const key = reaction.emoji.id ?? reaction.emoji.name;
   if (!key) return;
-  const pair = pairs.find((p) => p.emoji === key);
+  const pair = pairs.find((p) => parseEmoji(p.emoji) === key);
   if (!pair) return;
 
   const guild = reaction.message.guild;

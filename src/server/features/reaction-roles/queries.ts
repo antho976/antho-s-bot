@@ -52,6 +52,18 @@ export async function addPairs(rows: (typeof reactionRolePairs.$inferInsert)[]):
   if (rows.length) await db.insert(reactionRolePairs).values(rows);
 }
 
+export async function updatePanel(
+  id: number,
+  patch: Partial<typeof reactionRolePanels.$inferInsert>,
+): Promise<void> {
+  await db.update(reactionRolePanels).set(patch).where(eq(reactionRolePanels.id, id));
+}
+
+/** Drop a panel's emoji→role rows (without deleting the panel) — used when re-saving an edit. */
+export async function deletePairsByMessage(messageId: string): Promise<void> {
+  await db.delete(reactionRolePairs).where(eq(reactionRolePairs.messageId, messageId));
+}
+
 export function getPairsByMessage(messageId: string) {
   return db.select().from(reactionRolePairs).where(eq(reactionRolePairs.messageId, messageId));
 }
