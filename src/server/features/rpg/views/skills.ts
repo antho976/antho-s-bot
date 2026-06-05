@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { RPG } from "../config";
 import { buildId } from "../domain/custom-id";
+import { classDef } from "../domain/stats";
 import type { RpgPlayer } from "../queries";
 import { computeStats } from "../skills/compute";
 import { frontier } from "../skills/graph";
@@ -89,6 +90,11 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
   components.push(
     new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
+        .setCustomId(buildId(user.id, "skills", "guide"))
+        .setLabel("Overview")
+        .setEmoji("📖")
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
         .setCustomId(buildId(user.id, "skills", "respec"))
         .setLabel("Respec (free)")
         .setEmoji("♻️")
@@ -102,4 +108,54 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
   );
 
   return { embeds: [embed], components, files: [image] };
+}
+
+/** Text overview of the class's skill tree — what every node does, and which you've taken. */
+export function renderSkillGuide(player: RpgPlayer, user: User, nodeIds: string[]): RpgScreen {
+  const tree = getTree(player.classId);
+  const cls = classDef(player.classId);
+  if (!tree) {
+    const embed = new EmbedBuilder()
+      .setColor(RPG.embedColor)
+      .setTitle("🌳  Skill Tree")
+      .setDescription("Your class's skill tree isn't available yet — Warrior is in testing.");
+    return { embeds: [embed], components: [backOnlyRow(user.id)] };
+  }
+
+  const allocated = new Set(nodeIds);
+  const points = player.level - nodeIds.length;
+  const lines = tree.nodes
+    .filter((n) => n.type !== "root")
+    .map((n) => {
+      const mark = allocated.has(n.id) ? "✅" : "▫️";
+      const active = n.type === "active" ? " ⚡" : "";
+      return `${mark} **${n.name}**${active} — ${n.desc}`;
+    });
+
+  const embed = new EmbedBuilder()
+    .setColor(RPG.embedColor)
+    .setTitle(`${cls.emoji}  ${cls.name} — Skill Tree`)
+    .setDescription(
+      [
+        `**Points free:** ${points}`,
+        "Allocate from the tree screen — you can only take a node connected to one you already have. ⚡ marks an active ability (used in Dungeons).",
+        "",
+        ...lines,
+      ].join("\n"),
+    );
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "skills"))
+      .setLabel("Back")
+      .setEmoji("◀️")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "hub"))
+      .setLabel("Hub")
+      .setEmoji("🏠")
+      .setStyle(ButtonStyle.Secondary),
+  );
+
+  return { embeds: [embed], components: [row] };
 }
