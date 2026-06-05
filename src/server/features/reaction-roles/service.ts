@@ -1,5 +1,4 @@
 import {
-  ChannelType,
   EmbedBuilder,
   type MessageReaction,
   type PartialMessageReaction,
@@ -42,7 +41,7 @@ export async function createReactionRolePanel(
   if (!client) throw new Error("Bot is offline");
 
   const channel = await client.channels.fetch(channelId);
-  if (!channel || channel.type !== ChannelType.GuildText) {
+  if (!channel || !channel.isTextBased() || channel.isDMBased()) {
     throw new Error("Target is not a text channel");
   }
 
