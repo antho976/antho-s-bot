@@ -13,7 +13,16 @@ import {
   respecSkills,
   type RpgPlayer,
 } from "./queries";
-import { allocateSkill, runAdventure, withRegen } from "./service";
+import {
+  allocateSkill,
+  fightRound,
+  fleeEncounter,
+  startAdventure,
+  withCharges,
+  withRegen,
+  type AdventureReport,
+  type Encounter,
+} from "./service";
 import { applyDevCheat } from "./dev";
 import {
   allocGatherTalentPoint,
@@ -36,7 +45,7 @@ import {
   renderGatherTools,
   renderSkillAreas,
 } from "./views/gather";
-import { renderAdventureResult, renderCombat } from "./views/combat";
+import { renderAdventureResult, renderCombat, renderEncounter } from "./views/combat";
 import { renderInventory } from "./views/inventory";
 import {
   blacksmithLevel,
@@ -55,6 +64,20 @@ import {
   renderWeaponDetail,
   renderWeapons,
 } from "./views/blacksmith";
+import {
+  actInDungeon,
+  countKeys,
+  enterDungeon,
+  fleeDungeon,
+  getActiveRun,
+} from "./dungeon";
+import { dungeonDef } from "./dungeon-config";
+import type { DungeonAction } from "./domain/dungeon";
+import {
+  renderDungeonCombat,
+  renderDungeonList,
+  renderDungeonResult,
+} from "./views/dungeon";
 import { renderHub, renderPlayer } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
 import { renderDeleteConfirm, renderOptions } from "./views/options";
@@ -113,25 +136,53 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
     case "player":
       return { kind: "update", screen: renderPlayer(fresh, interaction.user) };
     case "combat": {
-      if (route.action === "go") {
-        const difficulty = route.args ? DIFFICULTY_MAP[route.args] : undefined;
-        // Unknown or still-locked difficulty (stale/forged click) → just re-show the menu.
-        if (!difficulty || fresh.level < difficulty.minLevel) {
-          return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
-        }
-        const outcome = await runAdventure(fresh, difficulty);
-        if (!outcome.ok) {
-          return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
-        }
+      const trackResult = (report: AdventureReport) =>
         void track(guildId, "rpg_adventure", {
-          difficulty: difficulty.id,
-          defeated: outcome.report.defeated,
-          gotKey: outcome.report.keys > 0,
-          leveled: outcome.report.leveledTo != null,
+          difficulty: report.difficulty.id,
+          defeated: report.defeated,
+          gotKey: report.keys > 0,
+          leveled: report.leveledTo != null,
+          packSize: report.packSize,
         });
-        return { kind: "update", screen: renderAdventureResult(outcome.report, interaction.user) };
+
+      if (route.action === "fight") {
+        const out = await fightRound(fresh);
+        if (out?.kind === "encounter") {
+          return { kind: "update", screen: renderEncounter(out.player, interaction.user, out.encounter) };
+        }
+        if (out?.kind === "result") {
+          trackResult(out.report);
+          return { kind: "update", screen: renderAdventureResult(out.report, interaction.user) };
+        }
+      } else if (route.action === "flee") {
+        const out = await fleeEncounter(fresh);
+        if (out?.kind === "result") {
+          return { kind: "update", screen: renderAdventureResult(out.report, interaction.user) };
+        }
+      } else if (route.action === "go" && !fresh.adventureEncounterJson) {
+        const difficulty = route.args ? DIFFICULTY_MAP[route.args] : undefined;
+        // Unknown or still-locked difficulty (stale/forged click) → fall through to the menu.
+        if (difficulty && fresh.level >= difficulty.minLevel) {
+          const out = await startAdventure(fresh, difficulty);
+          if (out.kind === "no_charge") {
+            const { player: p, charges } = await withCharges(fresh);
+            return { kind: "update", screen: renderCombat(p, interaction.user, charges, "Out of charges — rest up.") };
+          }
+          if (out.kind === "encounter") {
+            return { kind: "update", screen: renderEncounter(out.player, interaction.user, out.encounter) };
+          }
+          trackResult(out.report);
+          return { kind: "update", screen: renderAdventureResult(out.report, interaction.user) };
+        }
       }
-      return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
+
+      // No (or finished) action: resume an in-progress pack fight, else show the picker.
+      if (fresh.adventureEncounterJson) {
+        const enc = JSON.parse(fresh.adventureEncounterJson) as Encounter;
+        return { kind: "update", screen: renderEncounter(fresh, interaction.user, enc) };
+      }
+      const { player: cp, charges } = await withCharges(fresh);
+      return { kind: "update", screen: renderCombat(cp, interaction.user, charges) };
     }
     case "skills": {
       if (route.action === "actives") {
@@ -168,6 +219,8 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
       return handleGather(interaction, route, fresh, guildId);
     case "smith":
       return handleSmith(interaction, route, fresh, guildId);
+    case "dungeon":
+      return handleDungeon(interaction, route, fresh, guildId);
     case "inventory": {
       const rows = await listInventory(fresh.id);
       return { kind: "update", screen: renderInventory(interaction.user, rows) };
@@ -332,4 +385,83 @@ async function handleSmith(
   const level = await blacksmithLevel(player.id);
   const equipped = await equippedWeapon(player);
   return { kind: "update", screen: renderBlacksmith(user, player, level, equipped) };
+}
+
+/**
+ * Dungeon sub-router: active, turn-based delves. Each click resolves one round (or enters/leaves a
+ * run). If a run is in progress, the entry view resumes its combat board instead of the picker.
+ */
+async function handleDungeon(
+  interaction: RpgComponent,
+  route: RpgRoute,
+  player: RpgPlayer,
+  guildId: string,
+): Promise<RpgResponse> {
+  const user = interaction.user;
+  const action = route.action;
+  const dungeonName = (id: string) => dungeonDef(id)?.name ?? "the dungeon";
+
+  // Entry / resume — a live run takes you straight back to the fight.
+  if (!action || action === "list") {
+    const run = await getActiveRun(player);
+    return run && run.status === "active"
+      ? { kind: "update", screen: renderDungeonCombat(user, run, player.classId) }
+      : { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
+  }
+
+  if (action === "enter") {
+    const id = interaction.isStringSelectMenu() ? interaction.values[0] : route.args;
+    if (id) {
+      const r = await enterDungeon(player, id);
+      if (!r.ok) {
+        return { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id), r.reason) };
+      }
+      void track(guildId, "rpg_dungeon_enter", { dungeonId: id });
+    }
+    const run = await getActiveRun(player);
+    return run
+      ? { kind: "update", screen: renderDungeonCombat(user, run, player.classId) }
+      : { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
+  }
+
+  if (action === "flee") {
+    const res = await fleeDungeon(player);
+    if (!res) return { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
+    void track(guildId, "rpg_dungeon_end", { outcome: "fled", dungeonId: res.run.dungeonId });
+    return { kind: "update", screen: renderDungeonResult(user, res.summary, dungeonName(res.run.dungeonId)) };
+  }
+
+  // Combat actions → one round each.
+  let act: DungeonAction | null = null;
+  if (action === "attack") act = { type: "attack" };
+  else if (action === "guard") act = { type: "guard" };
+  else if (action === "advance") act = { type: "advance" };
+  else if (action === "coat") {
+    const el = interaction.isStringSelectMenu() ? interaction.values[0] : route.args;
+    if (el) act = { type: "coat", element: el };
+  } else if (action === "ability" && route.args) {
+    act = { type: "ability", id: route.args };
+  }
+
+  // No valid action (stale click) → re-show whatever's current.
+  if (!act) {
+    const run = await getActiveRun(player);
+    return run && run.status === "active"
+      ? { kind: "update", screen: renderDungeonCombat(user, run, player.classId) }
+      : { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
+  }
+
+  const outcome = await actInDungeon(player, act);
+  if (!outcome) {
+    return { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
+  }
+  if (outcome.kind === "result") {
+    void track(guildId, "rpg_dungeon_end", {
+      outcome: outcome.summary.outcome,
+      dungeonId: outcome.run.dungeonId,
+      room: outcome.run.roomIndex + 1,
+    });
+    return { kind: "update", screen: renderDungeonResult(user, outcome.summary, dungeonName(outcome.run.dungeonId)) };
+  }
+  return { kind: "update", screen: renderDungeonCombat(user, outcome.run, player.classId) };
 }

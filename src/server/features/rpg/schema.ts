@@ -38,7 +38,13 @@ export const rpgPlayers = sqliteTable(
     gatherAreaId: text("gather_area_id"),
     gatherStartedAt: ts("gather_started_at"),
     lastRegenAt: ts("last_regen_at"),
-    lastAdventureAt: ts("last_adventure_at"), // adventure cooldown (lazy check, no timer)
+    lastAdventureAt: ts("last_adventure_at"), // last adventure (kept for stats; gating is charges now)
+    // Adventure charges (stack up to RPG.maxAdventureCharges). `adventureChargeAt` anchors the lazy
+    // refill clock for the next charge; computed on read, no timers. Start full so nobody waits on rollout.
+    adventureCharges: integer("adventure_charges").notNull().default(5),
+    adventureChargeAt: ts("adventure_charge_at"),
+    // Active turn-based multi-mob encounter (one at a time), JSON. Null = no fight in progress.
+    adventureEncounterJson: text("adventure_encounter_json"),
     lastHubChannelId: text("last_hub_channel_id"),
     lastHubMessageId: text("last_hub_message_id"),
     createdAt: ts("created_at").$defaultFn(now),
@@ -118,4 +124,23 @@ export const rpgProfessions = sqliteTable(
     updatedAt: ts("updated_at").$defaultFn(now),
   },
   (t) => [uniqueIndex("rpg_professions_player_prof").on(t.playerId, t.profId)],
+);
+
+/**
+ * One active dungeon run per player (active, turn-based combat). The whole run — current room, both
+ * HP pools, blade coating, ability cooldowns, accrued loot, log — lives in `stateJson` (shape:
+ * domain/dungeon.RunState), so a click loads it, applies one round, and saves. Deleted on
+ * win/loss/flee. Stateless router + DB-as-truth: the run survives restarts (planning/11).
+ */
+export const rpgDungeonRuns = sqliteTable(
+  "rpg_dungeon_runs",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    playerId: integer("player_id").notNull(),
+    dungeonId: text("dungeon_id").notNull(),
+    stateJson: text("state_json").notNull(),
+    createdAt: ts("created_at").$defaultFn(now),
+    updatedAt: ts("updated_at").$defaultFn(now),
+  },
+  (t) => [uniqueIndex("rpg_dungeon_runs_player").on(t.playerId)],
 );

@@ -2,6 +2,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
   rpgConfig,
+  rpgDungeonRuns,
   rpgGathering,
   rpgGatherTalents,
   rpgInventory,
@@ -54,6 +55,7 @@ export async function updatePlayer(id: number, patch: PlayerPatch): Promise<void
 export async function deletePlayer(playerId: number): Promise<void> {
   await db.delete(rpgInventory).where(eq(rpgInventory.playerId, playerId));
   await db.delete(rpgPlayerSkills).where(eq(rpgPlayerSkills.playerId, playerId));
+  await db.delete(rpgDungeonRuns).where(eq(rpgDungeonRuns.playerId, playerId));
   await db.delete(rpgPlayers).where(eq(rpgPlayers.id, playerId));
 }
 
@@ -236,6 +238,39 @@ export async function resetGatherTalentNode(
         eq(rpgGatherTalents.nodeId, nodeId),
       ),
     );
+}
+
+// --- Dungeons --------------------------------------------------------------------------------
+
+export type RpgDungeonRunRow = typeof rpgDungeonRuns.$inferSelect;
+
+/** The player's one active dungeon run, or null. */
+export async function getDungeonRun(playerId: number): Promise<RpgDungeonRunRow | null> {
+  const rows = await db
+    .select()
+    .from(rpgDungeonRuns)
+    .where(eq(rpgDungeonRuns.playerId, playerId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Create or replace the active run's serialised state (one row per player, keyed by playerId). */
+export async function upsertDungeonRun(
+  playerId: number,
+  dungeonId: string,
+  stateJson: string,
+): Promise<void> {
+  await db
+    .insert(rpgDungeonRuns)
+    .values({ playerId, dungeonId, stateJson })
+    .onConflictDoUpdate({
+      target: rpgDungeonRuns.playerId,
+      set: { dungeonId, stateJson, updatedAt: new Date() },
+    });
+}
+
+export async function deleteDungeonRun(playerId: number): Promise<void> {
+  await db.delete(rpgDungeonRuns).where(eq(rpgDungeonRuns.playerId, playerId));
 }
 
 export type RpgConfig = typeof rpgConfig.$inferSelect;

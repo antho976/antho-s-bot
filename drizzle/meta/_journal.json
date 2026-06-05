@@ -169,6 +169,13 @@
       "when": 1780691070308,
       "tag": "0023_mean_talisman",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1780692434714,
+      "tag": "0024_sharp_princess_powerful",
+      "breakpoints": true
     }
   ]
 }
