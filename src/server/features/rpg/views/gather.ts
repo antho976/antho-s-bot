@@ -191,17 +191,20 @@ export function renderSkillAreas(user: User, skillId: string, levels: GatheringL
   // version would blow Discord's 4096-char description limit, drop the odds, then hard-truncate.
   const block = (a: GatherArea, withOdds: boolean): string => {
     const order = [skillId, ...areaSkills(a).filter((s) => s !== skillId)];
+    // Short resource names (first word) + tight spacing so a full 4-drop line fits one row instead
+    // of wrapping under the L bracket. The emoji + "veins/timber/…" already says what type it is.
+    const short = (n: string) => n.split(" ")[0];
     const rows = order.map((s, i) => {
       const primary = i === 0; // the skill you picked — its resources are bolded so they stand out
       const ss = GATHER_SKILL_MAP[s];
       const head = `${ss?.emoji ?? ""} ${areaAbundance(a.id, s)} ${ss?.noun ?? ""}`;
       const odds = withOdds
         ? `: ${areaOdds(a.id, s)
-            .map((o) => `${primary ? `**${o.name}**` : o.name} ${o.pct}%`)
-            .join("   ")}`
+            .map((o) => `${primary ? `**${short(o.name)}**` : short(o.name)} ${o.pct}%`)
+            .join("  ")}`
         : "";
       // The chosen skill sits at the base; the other skills nest under it with a light L bracket.
-      return primary ? `${head}${odds}` : `　 └ ${head}${odds}`;
+      return primary ? `${head}${odds}` : `　└ ${head}${odds}`;
     });
     const lock = levels.total < a.reqLevel ? "🔒 " : "";
     return `### ${lock}${a.name} (Lv ${a.reqLevel})\n${rows.join("\n")}`;
