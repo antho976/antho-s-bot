@@ -1,4 +1,5 @@
 import type { Message } from "discord.js";
+import { DEV_TOOLS } from "@/env";
 import { RPG, type Difficulty, type Mob } from "./config";
 import { applyXp, pickMob, resolveFight, rollRewards } from "./domain/adventure";
 import { applyRegen, classDef, maxHp } from "./domain/stats";
@@ -51,7 +52,7 @@ export async function runAdventure(
 ): Promise<AdventureOutcome> {
   const now = Date.now();
   const last = player.lastAdventureAt ? player.lastAdventureAt.getTime() : 0;
-  const remaining = RPG.adventureCooldownMs - (now - last);
+  const remaining = DEV_TOOLS ? 0 : RPG.adventureCooldownMs - (now - last);
   if (remaining > 0) return { ok: false, remainingMs: remaining };
 
   const cls = classDef(player.classId);

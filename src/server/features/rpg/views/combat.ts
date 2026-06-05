@@ -1,4 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type User } from "discord.js";
+import { DEV_TOOLS } from "@/env";
 import { DIFFICULTIES, RPG } from "../config";
 import { buildId } from "../domain/custom-id";
 import type { RpgPlayer } from "../queries";
@@ -20,6 +21,7 @@ function formatRemaining(ms: number): string {
 }
 
 function cooldownRemaining(player: RpgPlayer, now: number): number {
+  if (DEV_TOOLS) return 0; // dev bot: no adventure cooldown
   const last = player.lastAdventureAt ? player.lastAdventureAt.getTime() : 0;
   return RPG.adventureCooldownMs - (now - last);
 }

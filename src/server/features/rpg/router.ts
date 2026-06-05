@@ -1,4 +1,5 @@
 import type { ButtonInteraction, StringSelectMenuInteraction } from "discord.js";
+import { DEV_TOOLS } from "@/env";
 import { track } from "@/server/core/analytics";
 import { CLASSES, DEFAULT_CLASS, DIFFICULTY_MAP } from "./config";
 import { parseId } from "./domain/custom-id";
@@ -10,6 +11,7 @@ import {
   respecSkills,
 } from "./queries";
 import { allocateSkill, runAdventure, withRegen } from "./service";
+import { applyDevCheat } from "./dev";
 import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderHub } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
@@ -105,7 +107,13 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
         void track(guildId, "rpg_character_deleted", {});
         return { kind: "update", screen: renderIntro(interaction.user) };
       }
-      return { kind: "update", screen: renderOptions(interaction.user) };
+      return { kind: "update", screen: renderOptions(interaction.user, fresh) };
+    }
+    case "dev": {
+      // Dev cheats — test bot only. The flag guard means a forged id is inert in production.
+      if (DEV_TOOLS && route.action) await applyDevCheat(fresh, route.action);
+      const updated = (await getPlayer(guildId, interaction.user.id)) ?? fresh;
+      return { kind: "update", screen: renderOptions(interaction.user, updated) };
     }
     case "inventory":
     case "guild":
