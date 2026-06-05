@@ -20,6 +20,7 @@ import {
   areaSkills,
   ladderNames,
   toolName,
+  type GatherArea,
   type GatherSkillId,
 } from "../gather-config";
 import type { GatherPreview, GatheringLevels } from "../gather";
@@ -186,24 +187,34 @@ export function renderSkillAreas(user: User, skillId: string, levels: GatheringL
     (a, b) => a.reqLevel - b.reqLevel,
   );
 
-  const lines = offering.map((a) => {
-    const locked = levels.total < a.reqLevel;
-    const odds = areaOdds(a.id, skillId)
-      .map((o) => `${o.name} ${o.pct}%`)
-      .join("   ");
-    return `${locked ? "🔒 " : ""}**${a.name}** (Lv ${a.reqLevel})\n${sk?.emoji ?? ""} ${areaAbundance(a.id, skillId)} ${sk?.noun ?? ""}: ${odds}`;
-  });
+  // Each area lists every skill it offers (the chosen one first) with drop odds. If the full
+  // version would blow Discord's 4096-char description limit, drop the odds, then hard-truncate.
+  const block = (a: GatherArea, withOdds: boolean): string => {
+    const order = [skillId, ...areaSkills(a).filter((s) => s !== skillId)];
+    const rows = order.map((s) => {
+      const ss = GATHER_SKILL_MAP[s];
+      const head = `${ss?.emoji ?? ""} ${areaAbundance(a.id, s)} ${ss?.noun ?? ""}`;
+      if (!withOdds) return head;
+      const odds = areaOdds(a.id, s)
+        .map((o) => `${o.name} ${o.pct}%`)
+        .join("   ");
+      return `${head}: ${odds}`;
+    });
+    const lock = levels.total < a.reqLevel ? "🔒 " : "";
+    return `${lock}**${a.name}** (Lv ${a.reqLevel})\n${rows.join("\n")}`;
+  };
+
+  const intro = "Pick an area to gather. You'll harvest every skill it offers, not just this one.";
+  const build = (withOdds: boolean) =>
+    [intro, "", ...offering.map((a) => block(a, withOdds))].join("\n");
+  let desc = build(true);
+  if (desc.length > 4096) desc = build(false);
+  if (desc.length > 4096) desc = `${desc.slice(0, 4095)}…`;
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
     .setTitle(`${sk?.emoji ?? "⛏️"} ${sk?.name ?? "Gather"} areas`)
-    .setDescription(
-      [
-        "Pick an area to gather. You'll harvest every skill it offers, not just this one.",
-        "",
-        ...lines,
-      ].join("\n"),
-    );
+    .setDescription(desc);
 
   const unlocked = offering.filter((a) => levels.total >= a.reqLevel);
   const rows: (ActionRowBuilder<ButtonBuilder> | ActionRowBuilder<StringSelectMenuBuilder>)[] = [];
