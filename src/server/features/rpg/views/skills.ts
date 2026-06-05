@@ -44,7 +44,7 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
   const bonus = [`Damage ${stats.damage}`, `Crit ${Math.round(stats.critChance * 100)}%`];
   if (stats.lifesteal) bonus.push(`Lifesteal ${Math.round(stats.lifesteal * 100)}%`);
   if (stats.dodge) bonus.push(`Dodge ${Math.round(stats.dodge * 100)}%`);
-  if (stats.dmgReduction) bonus.push(`Reduction ${Math.round(stats.dmgReduction * 100)}%`);
+  if (stats.dmgReduction) bonus.push(`Defence ${Math.round(stats.dmgReduction * 100)}%`);
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
