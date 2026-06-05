@@ -192,13 +192,16 @@ export function renderSkillAreas(user: User, skillId: string, levels: GatheringL
   const block = (a: GatherArea, withOdds: boolean): string => {
     const order = [skillId, ...areaSkills(a).filter((s) => s !== skillId)];
     const rows = order.map((s, i) => {
+      const primary = i === 0; // the skill you picked — its resources are bolded so they stand out
       const ss = GATHER_SKILL_MAP[s];
       const head = `${ss?.emoji ?? ""} ${areaAbundance(a.id, s)} ${ss?.noun ?? ""}`;
       const odds = withOdds
-        ? `: ${areaOdds(a.id, s).map((o) => `${o.name} ${o.pct}%`).join("   ")}`
+        ? `: ${areaOdds(a.id, s)
+            .map((o) => `${primary ? `**${o.name}**` : o.name} ${o.pct}%`)
+            .join("   ")}`
         : "";
-      // The chosen skill sits at the base; the other skills nest under it with an L bracket.
-      return i === 0 ? `${head}${odds}` : `　 ┗ ${head}${odds}`;
+      // The chosen skill sits at the base; the other skills nest under it with a light L bracket.
+      return primary ? `${head}${odds}` : `　 └ ${head}${odds}`;
     });
     const lock = levels.total < a.reqLevel ? "🔒 " : "";
     return `${lock}**${a.name}** (Lv ${a.reqLevel})\n${rows.join("\n")}`;
