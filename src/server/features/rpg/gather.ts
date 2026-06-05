@@ -3,6 +3,7 @@
 // the bot being offline — elapsed is computed from a stored timestamp).
 import {
   GATHER,
+  GATHER_AREAS,
   GATHER_AREA_MAP,
   GATHER_SKILLS,
   GATHER_TALENTS,
@@ -156,6 +157,31 @@ export async function stopGather(player: RpgPlayer): Promise<CollectResult> {
     gatherStartedAt: null,
   });
   return r;
+}
+
+/** The best "farm everything" area unlocked: most skills offered, then highest tier. */
+function bestFarmArea(total: number): string | null {
+  const unlocked = GATHER_AREAS.filter((a) => total >= a.reqLevel);
+  if (unlocked.length === 0) return null;
+  const best = unlocked.reduce((b, a) => {
+    const na = areaSkills(a).length;
+    const nb = areaSkills(b).length;
+    if (na !== nb) return na > nb ? a : b;
+    return a.reqLevel > b.reqLevel ? a : b;
+  });
+  return best.id;
+}
+
+export type FarmResult = { ok: boolean; areaName?: string; reason?: string };
+
+/** "Farm XP": jump straight into the best multi-skill area you've unlocked. */
+export async function startFarmXp(player: RpgPlayer): Promise<FarmResult> {
+  const { total } = await gatheringLevels(player.id);
+  const areaId = bestFarmArea(total);
+  if (!areaId) return { ok: false, reason: "No areas unlocked yet." };
+  const r = await startGather(player, areaId);
+  if (!r.ok) return { ok: false, reason: r.reason };
+  return { ok: true, areaName: GATHER_AREA_MAP[areaId].name };
 }
 
 export type BuyToolResult = { ok: boolean; reason?: string };

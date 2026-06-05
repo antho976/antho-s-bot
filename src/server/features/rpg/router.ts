@@ -22,6 +22,7 @@ import {
   gatheringLevels,
   previewGather,
   resetGatherTalent,
+  startFarmXp,
   startGather,
   stopGather,
   talentRanksFor,
@@ -29,11 +30,11 @@ import {
 import { gatherLevel } from "./domain/gather";
 import { GATHER_SKILLS } from "./gather-config";
 import {
-  renderArea,
   renderGather,
   renderGatherGuide,
   renderGatherTalents,
   renderGatherTools,
+  renderSkillAreas,
 } from "./views/gather";
 import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderInventory } from "./views/inventory";
@@ -172,9 +173,9 @@ async function handleGather(
   const action = route.action;
 
   // Non-mutating sub-screens.
-  if (action === "area" && interaction.isStringSelectMenu()) {
-    const { total } = await gatheringLevels(player.id);
-    return { kind: "update", screen: renderArea(user, interaction.values[0], total) };
+  if (action === "skill" && interaction.isStringSelectMenu()) {
+    const levels = await gatheringLevels(player.id);
+    return { kind: "update", screen: renderSkillAreas(user, interaction.values[0], levels) };
   }
   if (action === "guide") {
     return { kind: "update", screen: renderGatherGuide(user) };
@@ -217,9 +218,15 @@ async function handleGather(
 
   // Mutations that return to the hub.
   let notice: string | undefined;
-  if (action === "start" && route.args) {
-    const r = await startGather(player, route.args);
-    if (!r.ok) notice = r.reason;
+  if (action === "start") {
+    const areaId = interaction.isStringSelectMenu() ? interaction.values[0] : route.args;
+    if (areaId) {
+      const r = await startGather(player, areaId);
+      if (!r.ok) notice = r.reason;
+    }
+  } else if (action === "farm") {
+    const r = await startFarmXp(player);
+    notice = r.ok ? `Farming XP at ${r.areaName}. Gathering every skill there.` : r.reason;
   } else if (action === "collect") {
     const r = await collectGather(player);
     notice =

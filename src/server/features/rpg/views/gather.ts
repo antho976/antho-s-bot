@@ -20,6 +20,7 @@ import {
   areaSkills,
   ladderNames,
   toolName,
+  type GatherSkillId,
 } from "../gather-config";
 import type { GatherPreview, GatheringLevels } from "../gather";
 import type { RpgPlayer } from "../queries";
@@ -50,15 +51,7 @@ function fmtDuration(ms: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function skillNames(areaId: string): string {
-  const area = GATHER_AREA_MAP[areaId];
-  if (!area) return "";
-  return areaSkills(area)
-    .map((s) => GATHER_SKILL_MAP[s].name)
-    .join(", ");
-}
-
-/** Gathering hub: your levels, the current session, and the list of areas you can travel to. */
+/** Gathering hub: your levels, the current session, a skill picker, and Farm XP. */
 export function renderGather(
   user: User,
   player: RpgPlayer,
@@ -75,50 +68,16 @@ export function renderGather(
       `📍 Gathering at **${area?.name ?? "?"}**`,
       `Ready to collect: **${(preview.totalUnits ?? 0).toLocaleString()}** drops (+${(preview.xp ?? 0).toLocaleString()} xp)`,
       preview.wasCapped
-        ? "⏳ Idle cap reached — collect to keep earning."
+        ? "⏳ Idle cap reached, collect to keep earning."
         : `⏳ ${fmtDuration(preview.remainingMs ?? 0)} of idle time left.`,
     ].join("\n");
   } else {
-    now = "Not gathering. Travel to an area below to begin.";
+    now = "Not gathering. Pick a skill below, or hit Farm XP.";
   }
-
-  // Area names use `###` markdown headers to read bigger — headers only render in the embed
-  // description (not inside a field value), so the whole hub body lives in the description.
-  //
-  // The embed only lists a window of relevant areas: the two most-recent unlocked req tiers plus the
-  // next locked tier (a goal). Outgrown low tiers fall off. The Travel menu below still has them all.
-  const tiers = [...new Set(GATHER_AREAS.map((a) => a.reqLevel))].sort((x, y) => x - y);
-  const unlocked = tiers.filter((t) => t <= levels.total);
-  const nextLocked = tiers.find((t) => t > levels.total);
-  const keep = new Set<number>([...unlocked.slice(-2), ...(nextLocked !== undefined ? [nextLocked] : [])]);
-  const shownAreas = GATHER_AREAS.filter((a) => keep.has(a.reqLevel));
-  const hidden = GATHER_AREAS.length - shownAreas.length;
-
-  // Group the shown areas under a level header (`## Level N`), with each area's name as a `###`
-  // sub-header and its abundances beneath. Locked groups (the next tier) get a 🔒 on the header.
-  const shownTiers = [...new Set(shownAreas.map((a) => a.reqLevel))].sort((x, y) => x - y);
-  const areaBlocks = shownTiers
-    .map((tier) => {
-      const header = `### ${levels.total < tier ? "🔒 " : ""}Level ${tier}`;
-      const areas = shownAreas
-        .filter((a) => a.reqLevel === tier)
-        .map((a) => {
-          const good = areaSkills(a)
-            .map((s) => `${GATHER_SKILL_MAP[s].emoji} ${areaAbundance(a.id, s)} ${GATHER_SKILL_MAP[s].noun}`)
-            .join(", ");
-          return `**${a.name}**\n${good}`;
-        })
-        .join("\n");
-      return `${header}\n${areas}`;
-    })
-    .join("\n");
 
   const body: string[] = [];
   if (notice) body.push(`*${notice}*`, "");
-  body.push(`Total **${levels.total}**`, levelLine, `🛠️ ${toolName(player.toolTier)}`, "", now, "", areaBlocks);
-  if (hidden > 0) {
-    body.push("", `-# Showing areas near your level — all ${GATHER_AREAS.length} are in the Travel menu.`);
-  }
+  body.push(`Total **${levels.total}**`, levelLine, `🛠️ ${toolName(player.toolTier)}`, "", now);
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
@@ -126,14 +85,15 @@ export function renderGather(
     .setDescription(body.join("\n"))
     .setFooter({ text: "Progress builds in real time, even while offline. Reopen to refresh, then Collect." });
 
-  const travel = new StringSelectMenuBuilder()
-    .setCustomId(buildId(user.id, "gather", "area"))
-    .setPlaceholder("Travel to an area…")
+  const skillSelect = new StringSelectMenuBuilder()
+    .setCustomId(buildId(user.id, "gather", "skill"))
+    .setPlaceholder("Pick a skill to gather…")
     .addOptions(
-      GATHER_AREAS.slice(0, 25).map((a) => ({
-        label: a.name,
-        description: `Lv ${a.reqLevel}  ·  ${skillNames(a.id)}`.slice(0, 100),
-        value: a.id,
+      GATHER_SKILLS.map((s) => ({
+        label: s.name,
+        description: `Level ${levels.perSkill[s.id] ?? 1}`,
+        value: s.id,
+        emoji: s.emoji,
       })),
     );
 
@@ -151,6 +111,14 @@ export function renderGather(
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(!preview.active),
     new ButtonBuilder()
+      .setCustomId(buildId(user.id, "gather", "farm"))
+      .setLabel("Farm XP")
+      .setEmoji("🌾")
+      .setStyle(ButtonStyle.Primary),
+  );
+
+  const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
       .setCustomId(buildId(user.id, "gather", "tools"))
       .setLabel("Tools")
       .setEmoji("🛠️")
@@ -160,9 +128,6 @@ export function renderGather(
       .setLabel("Talents")
       .setEmoji("🌟")
       .setStyle(ButtonStyle.Secondary),
-  );
-
-  const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "gather", "guide"))
       .setLabel("Guide")
@@ -173,7 +138,7 @@ export function renderGather(
 
   return {
     embeds: [embed],
-    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(travel), actions, nav],
+    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(skillSelect), actions, nav],
   };
 }
 
@@ -214,46 +179,53 @@ export function renderGatherGuide(user: User): RpgScreen {
   return { embeds: [embed], components: [row] };
 }
 
-/** Area detail (Overview): the drop odds for every skill the area offers. You gather them all. */
-export function renderArea(user: User, areaId: string, total: number, notice?: string): RpgScreen {
-  const area = GATHER_AREA_MAP[areaId];
-  if (!area) {
-    return {
-      embeds: [new EmbedBuilder().setColor(RPG.embedColor).setTitle("Unknown area")],
-      components: [new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "gather"))],
-    };
-  }
+/** Areas for a chosen skill (the travel list, filtered to areas that offer it). Pick one to start. */
+export function renderSkillAreas(user: User, skillId: string, levels: GatheringLevels): RpgScreen {
+  const sk = GATHER_SKILL_MAP[skillId];
+  const offering = GATHER_AREAS.filter((a) => areaSkills(a).includes(skillId as GatherSkillId)).sort(
+    (a, b) => a.reqLevel - b.reqLevel,
+  );
 
-  const locked = total < area.reqLevel;
-  const blocks = areaSkills(area).map((s) => {
-    const sk = GATHER_SKILL_MAP[s];
-    const odds = areaOdds(area.id, s)
+  const lines = offering.map((a) => {
+    const locked = levels.total < a.reqLevel;
+    const odds = areaOdds(a.id, skillId)
       .map((o) => `${o.name} ${o.pct}%`)
       .join("   ");
-    return `${sk.emoji} **${sk.name}**  (${areaAbundance(area.id, s)} ${sk.noun})\n${odds}`;
+    return `${locked ? "🔒 " : ""}**${a.name}** (Lv ${a.reqLevel})\n${sk?.emoji ?? ""} ${areaAbundance(a.id, skillId)} ${sk?.noun ?? ""}: ${odds}`;
   });
-
-  const lines = [notice ? `*${notice}*` : area.blurb];
-  if (locked) lines.push(`🔒 Requires total gathering level **${area.reqLevel}**.`);
-  lines.push("", "You gather everything here at once.", "", ...blocks);
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle(`📍 ${area.name}`)
-    .setDescription(lines.join("\n"));
+    .setTitle(`${sk?.emoji ?? "⛏️"} ${sk?.name ?? "Gather"} areas`)
+    .setDescription(
+      [
+        "Pick an area to gather. You'll harvest every skill it offers, not just this one.",
+        "",
+        ...lines,
+      ].join("\n"),
+    );
 
-  const startRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(buildId(user.id, "gather", "start", area.id))
-      .setLabel("Gather here")
-      .setEmoji("⛏️")
-      .setStyle(ButtonStyle.Success)
-      .setDisabled(locked),
-    back(user.id, "gather"),
-    hubButton(user.id),
-  );
+  const unlocked = offering.filter((a) => levels.total >= a.reqLevel);
+  const rows: (ActionRowBuilder<ButtonBuilder> | ActionRowBuilder<StringSelectMenuBuilder>)[] = [];
+  if (unlocked.length > 0) {
+    rows.push(
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(buildId(user.id, "gather", "start"))
+          .setPlaceholder("Travel to an area…")
+          .addOptions(
+            unlocked.slice(0, 25).map((a) => ({
+              label: a.name,
+              description: `Lv ${a.reqLevel} · ${areaAbundance(a.id, skillId)} ${sk?.noun ?? ""}`.slice(0, 100),
+              value: a.id,
+            })),
+          ),
+      ),
+    );
+  }
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "gather"), hubButton(user.id)));
 
-  return { embeds: [embed], components: [startRow] };
+  return { embeds: [embed], components: rows };
 }
 
 /** The multitool ladder. */
