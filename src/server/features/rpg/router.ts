@@ -20,7 +20,7 @@ import {
   collectGather,
   gatheringLevels,
   previewGather,
-  respecGatherTalents,
+  resetGatherTalent,
   startGather,
   stopGather,
   talentRanksFor,
@@ -193,9 +193,12 @@ async function handleGather(
       screen: await gatherTalentsScreen(user, player, route.args, r.ok ? undefined : r.reason),
     };
   }
-  if (action === "respecgather" && route.args) {
-    await respecGatherTalents(player, route.args);
-    return { kind: "update", screen: await gatherTalentsScreen(user, player, route.args, "Talents reset.") };
+  if (action === "resettalent" && route.args && interaction.isStringSelectMenu()) {
+    await resetGatherTalent(player, route.args, interaction.values[0]);
+    return {
+      kind: "update",
+      screen: await gatherTalentsScreen(user, player, route.args, "Talent reset — points refunded."),
+    };
   }
 
   // Mutations that return to the hub.

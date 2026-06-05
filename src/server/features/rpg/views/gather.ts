@@ -32,6 +32,23 @@ function back(ownerId: string, view: string, label = "Back"): ButtonBuilder {
     .setStyle(ButtonStyle.Secondary);
 }
 
+/** Jump straight to the RPG hub — added on screens more than one Back away from it. */
+function hubButton(ownerId: string): ButtonBuilder {
+  return new ButtonBuilder()
+    .setCustomId(buildId(ownerId, "hub"))
+    .setLabel("Hub")
+    .setEmoji("🏠")
+    .setStyle(ButtonStyle.Secondary);
+}
+
+function fmtDuration(ms: number): string {
+  const mins = Math.max(0, Math.round(ms / 60_000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h <= 0) return `${m}m`;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 function skillNames(areaId: string): string {
   const area = GATHER_AREA_MAP[areaId];
   if (!area) return "";
@@ -55,7 +72,10 @@ export function renderGather(
     const area = GATHER_AREA_MAP[preview.areaId];
     now = [
       `📍 Gathering at **${area?.name ?? "?"}**`,
-      `Ready to collect: **${(preview.totalUnits ?? 0).toLocaleString()}** drops (+${(preview.xp ?? 0).toLocaleString()} xp)${preview.wasCapped ? "  ·  idle cap reached" : ""}`,
+      `Ready to collect: **${(preview.totalUnits ?? 0).toLocaleString()}** drops (+${(preview.xp ?? 0).toLocaleString()} xp)`,
+      preview.wasCapped
+        ? "⏳ Idle cap reached — collect to keep earning."
+        : `⏳ ${fmtDuration(preview.remainingMs ?? 0)} of idle time left.`,
     ].join("\n");
   } else {
     now = "Not gathering. Travel to an area below to begin.";
@@ -184,6 +204,7 @@ export function renderArea(user: User, areaId: string, total: number, notice?: s
       .setStyle(ButtonStyle.Success)
       .setDisabled(locked),
     back(user.id, "gather"),
+    hubButton(user.id),
   );
 
   return { embeds: [embed], components: [startRow] };
@@ -228,7 +249,7 @@ export function renderGatherTools(
       ),
     );
   }
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "gather")));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "gather"), hubButton(user.id)));
   return { embeds: [embed], components: rows };
 }
 
@@ -293,15 +314,26 @@ export function renderGatherTalents(
     );
   }
 
+  const resettable = GATHER_TALENTS.filter((t) => (ranks[t.id] ?? 0) > 0);
+  if (resettable.length > 0) {
+    rows.push(
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(buildId(user.id, "gather", "resettalent", skillId))
+          .setPlaceholder("Reset a talent (refund its points)…")
+          .addOptions(
+            resettable.map((t) => ({
+              label: t.name,
+              description: `Refund ${ranks[t.id]} point${ranks[t.id] === 1 ? "" : "s"}`,
+              value: t.id,
+            })),
+          ),
+      ),
+    );
+  }
+
   rows.push(
-    new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId(buildId(user.id, "gather", "respecgather", skillId))
-        .setLabel("Reset (free)")
-        .setEmoji("♻️")
-        .setStyle(ButtonStyle.Secondary),
-      back(user.id, "gather"),
-    ),
+    new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "gather"), hubButton(user.id)),
   );
 
   return { embeds: [embed], components: rows, files: [image] };

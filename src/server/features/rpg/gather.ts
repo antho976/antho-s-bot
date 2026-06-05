@@ -19,7 +19,7 @@ import {
   allocGatherTalent,
   getGatherTalents,
   getGatheringXp,
-  resetGatherTalents,
+  resetGatherTalentNode,
   updatePlayer,
   type RpgPlayer,
 } from "./queries";
@@ -81,6 +81,7 @@ export type GatherPreview = {
   xp?: number;
   perSkill?: { skillId: string; xp: number }[];
   wasCapped?: boolean;
+  remainingMs?: number;
 };
 
 /**
@@ -99,19 +100,20 @@ export async function previewGather(player: RpgPlayer): Promise<GatherPreview> {
   const dropMap = new Map<string, number>();
   const perSkill: { skillId: string; xp: number }[] = [];
   let xp = 0;
-  let wasCapped = false;
+  let maxCapMs = 0;
   for (const s of skills) {
     const ranks = await talentRanksFor(player.id, s);
     const rates = ratesFor(player.toolTier, ranks);
+    maxCapMs = Math.max(maxCapMs, rates.capMs);
     const h = computeHarvest(elapsed, areaDropTable(gatherAreaId, s), rates);
     for (const d of h.drops) dropMap.set(d.resourceId, (dropMap.get(d.resourceId) ?? 0) + d.units);
     perSkill.push({ skillId: s, xp: h.xpGained });
     xp += h.xpGained;
-    if (h.wasCapped) wasCapped = true;
   }
   const drops = [...dropMap].map(([resourceId, units]) => ({ resourceId, units }));
   const totalUnits = drops.reduce((a, d) => a + d.units, 0);
-  return { active: true, areaId: gatherAreaId, drops, totalUnits, xp, perSkill, wasCapped };
+  const remainingMs = Math.max(0, maxCapMs - elapsed);
+  return { active: true, areaId: gatherAreaId, drops, totalUnits, xp, perSkill, wasCapped: remainingMs <= 0, remainingMs };
 }
 
 export type CollectResult = { totalUnits: number; xp: number } | null;
@@ -193,7 +195,11 @@ export async function allocGatherTalentPoint(
   return { ok: true };
 }
 
-/** Free respec of a skill's gathering talents. */
-export async function respecGatherTalents(player: RpgPlayer, skillId: string): Promise<void> {
-  await resetGatherTalents(player.id, skillId);
+/** Free refund of a single gathering talent (its points return to that skill's pool). */
+export async function resetGatherTalent(
+  player: RpgPlayer,
+  skillId: string,
+  nodeId: string,
+): Promise<void> {
+  await resetGatherTalentNode(player.id, skillId, nodeId);
 }

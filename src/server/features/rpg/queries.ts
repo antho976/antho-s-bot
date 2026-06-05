@@ -142,11 +142,21 @@ export async function allocGatherTalent(
     });
 }
 
-/** Free respec of one skill's gathering talents. */
-export async function resetGatherTalents(playerId: number, skillId: string): Promise<void> {
+/** Refund a single gathering talent (delete its row, returning the spent points). */
+export async function resetGatherTalentNode(
+  playerId: number,
+  skillId: string,
+  nodeId: string,
+): Promise<void> {
   await db
     .delete(rpgGatherTalents)
-    .where(and(eq(rpgGatherTalents.playerId, playerId), eq(rpgGatherTalents.skillId, skillId)));
+    .where(
+      and(
+        eq(rpgGatherTalents.playerId, playerId),
+        eq(rpgGatherTalents.skillId, skillId),
+        eq(rpgGatherTalents.nodeId, nodeId),
+      ),
+    );
 }
 
 export type RpgConfig = typeof rpgConfig.$inferSelect;
