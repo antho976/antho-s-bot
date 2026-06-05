@@ -1,6 +1,13 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/server/db";
-import { rpgConfig, rpgInventory, rpgPlayers, rpgPlayerSkills } from "./schema";
+import {
+  rpgConfig,
+  rpgGathering,
+  rpgGatherTalents,
+  rpgInventory,
+  rpgPlayers,
+  rpgPlayerSkills,
+} from "./schema";
 import { classDef, maxHp } from "./domain/stats";
 
 export type RpgPlayer = typeof rpgPlayers.$inferSelect;
@@ -92,6 +99,67 @@ export async function addItem(playerId: number, itemId: string, qty: number): Pr
   } else {
     await db.insert(rpgInventory).values({ playerId, itemId, qty });
   }
+}
+
+// --- Gathering -------------------------------------------------------------------------------
+
+export type RpgInventoryRow = typeof rpgInventory.$inferSelect;
+
+/** All inventory rows for a player (resources + items). */
+export function listInventory(playerId: number): Promise<RpgInventoryRow[]> {
+  return db.select().from(rpgInventory).where(eq(rpgInventory.playerId, playerId));
+}
+
+/** Delete specific inventory rows (used when selling resources). */
+export async function deleteInventoryRows(ids: number[]): Promise<void> {
+  if (ids.length === 0) return;
+  await db.delete(rpgInventory).where(inArray(rpgInventory.id, ids));
+}
+
+/** Per-skill cumulative gathering xp as a map (missing skill = 0). */
+export async function getGatheringXp(playerId: number): Promise<Record<string, number>> {
+  const rows = await db.select().from(rpgGathering).where(eq(rpgGathering.playerId, playerId));
+  return Object.fromEntries(rows.map((r) => [r.skillId, r.xp]));
+}
+
+/** Add xp to a skill (find-or-insert the row). */
+export async function addGatherXp(playerId: number, skillId: string, xp: number): Promise<void> {
+  if (xp <= 0) return;
+  await db
+    .insert(rpgGathering)
+    .values({ playerId, skillId, xp })
+    .onConflictDoUpdate({
+      target: [rpgGathering.playerId, rpgGathering.skillId],
+      set: { xp: sql`${rpgGathering.xp} + ${xp}`, updatedAt: new Date() },
+    });
+}
+
+export type GatherTalentRow = typeof rpgGatherTalents.$inferSelect;
+
+export function getGatherTalents(playerId: number): Promise<GatherTalentRow[]> {
+  return db.select().from(rpgGatherTalents).where(eq(rpgGatherTalents.playerId, playerId));
+}
+
+/** Add one rank to a talent (insert at rank 1, else +1). Caller checks points + max rank first. */
+export async function allocGatherTalent(
+  playerId: number,
+  skillId: string,
+  nodeId: string,
+): Promise<void> {
+  await db
+    .insert(rpgGatherTalents)
+    .values({ playerId, skillId, nodeId, rank: 1 })
+    .onConflictDoUpdate({
+      target: [rpgGatherTalents.playerId, rpgGatherTalents.skillId, rpgGatherTalents.nodeId],
+      set: { rank: sql`${rpgGatherTalents.rank} + 1` },
+    });
+}
+
+/** Free respec of one skill's gathering talents. */
+export async function resetGatherTalents(playerId: number, skillId: string): Promise<void> {
+  await db
+    .delete(rpgGatherTalents)
+    .where(and(eq(rpgGatherTalents.playerId, playerId), eq(rpgGatherTalents.skillId, skillId)));
 }
 
 export type RpgConfig = typeof rpgConfig.$inferSelect;

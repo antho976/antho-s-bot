@@ -1,17 +1,39 @@
-import type { ButtonInteraction, StringSelectMenuInteraction } from "discord.js";
+import type { ButtonInteraction, StringSelectMenuInteraction, User } from "discord.js";
 import { DEV_TOOLS } from "@/env";
 import { track } from "@/server/core/analytics";
 import { CLASSES, DEFAULT_CLASS, DIFFICULTY_MAP } from "./config";
-import { parseId } from "./domain/custom-id";
+import { parseId, type RpgRoute } from "./domain/custom-id";
 import {
   createPlayer,
   deletePlayer,
   getAllocatedNodeIds,
+  getGatheringXp,
   getPlayer,
   respecSkills,
+  type RpgPlayer,
 } from "./queries";
 import { allocateSkill, runAdventure, withRegen } from "./service";
 import { applyDevCheat } from "./dev";
+import {
+  allocGatherTalentPoint,
+  buyTool,
+  collectGather,
+  gatheringLevels,
+  previewGather,
+  respecGatherTalents,
+  sellResources,
+  startGather,
+  stopGather,
+  talentRanksFor,
+} from "./gather";
+import { gatherLevel } from "./domain/gather";
+import { GATHER_SKILLS, RESOURCES } from "./gather-config";
+import {
+  renderGather,
+  renderGatherAreas,
+  renderGatherTalents,
+  renderGatherTools,
+} from "./views/gather";
 import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderHub } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
@@ -115,6 +137,8 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
       const updated = (await getPlayer(guildId, interaction.user.id)) ?? fresh;
       return { kind: "update", screen: renderOptions(interaction.user, updated) };
     }
+    case "gather":
+      return handleGather(interaction, route, fresh, guildId);
     case "inventory":
     case "guild":
     case "quests":
@@ -125,4 +149,95 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
     default:
       return { kind: "update", screen: renderHub(fresh, interaction.user) };
   }
+}
+
+/** Gathering sub-router — kept out of the main switch so handleRpgComponent stays readable. */
+async function handleGather(
+  interaction: RpgComponent,
+  route: RpgRoute,
+  player: RpgPlayer,
+  guildId: string,
+): Promise<RpgResponse> {
+  const user = interaction.user;
+  const action = route.action;
+
+  // Non-mutating sub-screens.
+  if (action === "pick" && interaction.isStringSelectMenu()) {
+    const levels = await gatheringLevels(player.id);
+    return { kind: "update", screen: renderGatherAreas(user, interaction.values[0], levels) };
+  }
+  if (action === "tools") {
+    const { total } = await gatheringLevels(player.id);
+    return { kind: "update", screen: renderGatherTools(user, player, total) };
+  }
+  if (action === "talents") {
+    return { kind: "update", screen: await gatherTalentsScreen(user, player, route.args ?? GATHER_SKILLS[0].id) };
+  }
+  if (action === "talentpick" && interaction.isStringSelectMenu()) {
+    return { kind: "update", screen: await gatherTalentsScreen(user, player, interaction.values[0]) };
+  }
+
+  // Mutations that stay on a sub-screen.
+  if (action === "buytool" && route.args) {
+    const r = await buyTool(player, Number(route.args));
+    const p2 = (await getPlayer(guildId, user.id)) ?? player;
+    const { total } = await gatheringLevels(p2.id);
+    return {
+      kind: "update",
+      screen: renderGatherTools(user, p2, total, r.ok ? "Tool acquired!" : r.reason),
+    };
+  }
+  if (action === "talent" && route.args && interaction.isStringSelectMenu()) {
+    const r = await allocGatherTalentPoint(player, route.args, interaction.values[0]);
+    return {
+      kind: "update",
+      screen: await gatherTalentsScreen(user, player, route.args, r.ok ? undefined : r.reason),
+    };
+  }
+  if (action === "respecgather" && route.args) {
+    await respecGatherTalents(player, route.args);
+    return { kind: "update", screen: await gatherTalentsScreen(user, player, route.args, "Talents reset.") };
+  }
+
+  // Mutations that return to the hub.
+  let notice: string | undefined;
+  if (action === "start" && route.args) {
+    const [skillId, areaId] = route.args.split(":");
+    const r = await startGather(player, skillId, areaId);
+    if (!r.ok) notice = r.reason;
+  } else if (action === "collect") {
+    const r = await collectGather(player);
+    notice =
+      r && (r.units || r.xp)
+        ? `Collected ${r.units.toLocaleString()}× ${RESOURCES[r.resourceId]?.name ?? "drops"} (+${r.xp.toLocaleString()} xp).`
+        : "Nothing banked yet.";
+  } else if (action === "stop") {
+    const r = await stopGather(player);
+    notice = r
+      ? `Stopped — banked ${r.units.toLocaleString()} drops (+${r.xp.toLocaleString()} xp).`
+      : "Stopped gathering.";
+  } else if (action === "sell") {
+    const r = await sellResources(player);
+    notice =
+      r.count > 0
+        ? `Sold ${r.count.toLocaleString()} resources for 💰 ${r.gold.toLocaleString()} gold.`
+        : "No resources to sell.";
+  }
+
+  const p2 = (await getPlayer(guildId, user.id)) ?? player;
+  const levels = await gatheringLevels(p2.id);
+  const preview = await previewGather(p2);
+  return { kind: "update", screen: renderGather(user, p2, levels, preview, notice) };
+}
+
+async function gatherTalentsScreen(
+  user: User,
+  player: RpgPlayer,
+  skillId: string,
+  notice?: string,
+): Promise<RpgScreen> {
+  const xp = await getGatheringXp(player.id);
+  const level = gatherLevel(xp[skillId] ?? 0);
+  const ranks = await talentRanksFor(player.id, skillId);
+  return renderGatherTalents(user, skillId, level, ranks, notice);
 }

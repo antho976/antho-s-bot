@@ -30,6 +30,12 @@ export const rpgPlayers = sqliteTable(
     xp: integer("xp").notNull().default(0),
     hp: integer("hp").notNull().default(0),
     gold: integer("gold").notNull().default(0),
+    toolTier: integer("tool_tier").notNull().default(0), // owned multitool tier (0 = bare hands)
+    // Active idle-gathering session (one at a time). Drops are computed lazily on collect from
+    // gatherStartedAt, no timer. Null skill/area = not gathering.
+    gatherSkillId: text("gather_skill_id"),
+    gatherAreaId: text("gather_area_id"),
+    gatherStartedAt: ts("gather_started_at"),
     lastRegenAt: ts("last_regen_at"),
     lastAdventureAt: ts("last_adventure_at"), // adventure cooldown (lazy check, no timer)
     lastHubChannelId: text("last_hub_channel_id"),
@@ -70,4 +76,31 @@ export const rpgPlayerSkills = sqliteTable(
     createdAt: ts("created_at").$defaultFn(now),
   },
   (t) => [uniqueIndex("rpg_player_skills_unique").on(t.playerId, t.nodeId)],
+);
+
+/** Per-skill gathering XP (Mining/Woodcutting/Herbalism/Fishing). Level is derived from xp. */
+export const rpgGathering = sqliteTable(
+  "rpg_gathering",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    playerId: integer("player_id").notNull(),
+    skillId: text("skill_id").notNull(),
+    xp: integer("xp").notNull().default(0),
+    createdAt: ts("created_at").$defaultFn(now),
+    updatedAt: ts("updated_at").$defaultFn(now),
+  },
+  (t) => [uniqueIndex("rpg_gathering_player_skill").on(t.playerId, t.skillId)],
+);
+
+/** Allocated gathering-talent ranks, per player per skill. Points to spend = that skill's level. */
+export const rpgGatherTalents = sqliteTable(
+  "rpg_gather_talents",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    playerId: integer("player_id").notNull(),
+    skillId: text("skill_id").notNull(),
+    nodeId: text("node_id").notNull(),
+    rank: integer("rank").notNull().default(1),
+  },
+  (t) => [uniqueIndex("rpg_gather_talents_unique").on(t.playerId, t.skillId, t.nodeId)],
 );

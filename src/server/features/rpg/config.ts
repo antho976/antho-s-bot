@@ -54,10 +54,10 @@ export type Difficulty = {
 };
 
 export const DIFFICULTIES: Difficulty[] = [
-  { id: "easy", label: "Easy", hint: "safest, least loot", emoji: "🟢", style: "success", hpMult: 0.6, dmgMult: 0.6, xpMult: 0.7, goldMult: 0.7, keyChance: 0.15, minLevel: 1 },
-  { id: "normal", label: "Normal", hint: "a fair fight", emoji: "🟡", style: "primary", hpMult: 1.0, dmgMult: 1.0, xpMult: 1.0, goldMult: 1.0, keyChance: 0.25, minLevel: 1 },
-  { id: "hard", label: "Hard", hint: "risky, better loot", emoji: "🔴", style: "danger", hpMult: 1.5, dmgMult: 1.4, xpMult: 1.6, goldMult: 1.6, keyChance: 0.45, minLevel: 1 },
-  { id: "brutal", label: "Brutal", hint: "deadly, best loot", emoji: "🟣", style: "danger", hpMult: 2.2, dmgMult: 1.9, xpMult: 2.5, goldMult: 2.5, keyChance: 0.65, minLevel: 1 },
+  { id: "easy", label: "Easy", hint: "safest, least loot", emoji: "🟢", style: "success", hpMult: 1.6, dmgMult: 1.1, xpMult: 1.0, goldMult: 1.0, keyChance: 0.60, minLevel: 1 },
+  { id: "normal", label: "Normal", hint: "a fair fight", emoji: "🟡", style: "primary", hpMult: 2.0, dmgMult: 1.4, xpMult: 1.6, goldMult: 1.6, keyChance: 0.90, minLevel: 1 },
+  { id: "hard", label: "Hard", hint: "risky, better loot", emoji: "🔴", style: "danger", hpMult: 2.5, dmgMult: 2.4, xpMult: 2.4, goldMult: 2.4, keyChance: 1.20, minLevel: 1 },
+  { id: "brutal", label: "Brutal", hint: "deadly, best loot", emoji: "🟣", style: "danger", hpMult: 5.2, dmgMult: 4.9, xpMult: 6.2, goldMult: 6.2, keyChance: 7.00, minLevel: 1 },
 ];
 
 export const DIFFICULTY_MAP: Record<string, Difficulty> = Object.fromEntries(
@@ -135,6 +135,7 @@ export const INTRO_LORE = [
  */
 export const HUB_CATEGORIES = [
   { view: "combat", label: "Combat", emoji: "⚔️", style: "danger" },
+  { view: "gather", label: "Gather", emoji: "⛏️", style: "success" },
   { view: "inventory", label: "Inventory", emoji: "🎒", style: "primary" },
   { view: "skills", label: "Skills", emoji: "🌳", style: "success" },
   { view: "guild", label: "Guild", emoji: "🏰", style: "success" },
