@@ -145,17 +145,19 @@ export function registerMemberLogEvents(client: Client): void {
 
   client.on(Events.MessageDelete, async (msg) => {
     if (!msg.guildId || msg.author?.bot) return;
+    // Uncached deletions (message sent before the bot started, or evicted from cache) arrive with no
+    // content, author, or attachments — logging them just spams "(no cached content)". Only log a
+    // deletion we can actually describe.
+    if (!msg.content && !msg.attachments?.size) return;
     const fields: LogField[] = [{ name: "Channel", value: `<#${msg.channelId}>`, inline: true }];
     if (msg.author) fields.push({ name: "Author", value: `<@${msg.author.id}>`, inline: true });
-    const attachments = msg.attachments?.size
-      ? `\n\n*${msg.attachments.size} attachment(s)*`
-      : "";
+    const attachNote = msg.attachments?.size ? `*${msg.attachments.size} attachment(s)*` : "";
     await logEvent(msg.guildId, {
       type: "msg_delete",
       title: "Message deleted",
       userId: msg.author?.id,
       author: msg.author ? authorOf(msg.author) : undefined,
-      description: (msg.content || "(no cached content)") + attachments,
+      description: msg.content ? msg.content + (attachNote ? `\n\n${attachNote}` : "") : attachNote,
       fields,
       summary: `message by ${msg.author?.tag ?? "?"} deleted`,
     });
