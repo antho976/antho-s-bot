@@ -14,13 +14,13 @@ export const GATHER = {
 
 export type GatherSkillId = "mining" | "woodcutting" | "herbalism" | "fishing";
 
-export type GatherSkill = { id: GatherSkillId; name: string; verb: string };
+export type GatherSkill = { id: GatherSkillId; name: string; verb: string; emoji: string; noun: string };
 
 export const GATHER_SKILLS: GatherSkill[] = [
-  { id: "mining", name: "Mining", verb: "Mining" },
-  { id: "woodcutting", name: "Woodcutting", verb: "Chopping" },
-  { id: "herbalism", name: "Herbalism", verb: "Foraging" },
-  { id: "fishing", name: "Fishing", verb: "Fishing" },
+  { id: "mining", name: "Mining", verb: "Mining", emoji: "⛏️", noun: "veins" },
+  { id: "woodcutting", name: "Woodcutting", verb: "Chopping", emoji: "🪓", noun: "timber" },
+  { id: "herbalism", name: "Herbalism", verb: "Foraging", emoji: "🌿", noun: "herbs" },
+  { id: "fishing", name: "Fishing", verb: "Fishing", emoji: "🎣", noun: "shoals" },
 ];
 
 export const GATHER_SKILL_MAP: Record<string, GatherSkill> = Object.fromEntries(
@@ -130,6 +130,31 @@ export function topResourceName(areaId: string, skillId: string): string | null 
   const table = areaDropTable(areaId, skillId);
   if (table.length === 0) return null;
   return RESOURCES[table[table.length - 1].resourceId].name;
+}
+
+/** Flavour word for how good a skill is in an area, from the drop table's tier weighting. */
+const ABUNDANCE: { min: number; word: string }[] = [
+  { min: 3.0, word: "abundant" },
+  { min: 2.3, word: "rich" },
+  { min: 1.8, word: "plentiful" },
+  { min: 1.4, word: "modest" },
+  { min: 0, word: "sparse" },
+];
+
+export function areaAbundance(areaId: string, skillId: string): string {
+  const table = areaDropTable(areaId, skillId);
+  if (table.length === 0) return "none";
+  const ladder = LADDER[skillId as GatherSkillId];
+  const sum = table.reduce((a, t) => a + t.weight, 0) || 1;
+  const score = table.reduce((a, t) => a + t.weight * (ladder.indexOf(t.resourceId) + 1), 0) / sum;
+  return (ABUNDANCE.find((b) => score >= b.min) ?? ABUNDANCE[ABUNDANCE.length - 1]).word;
+}
+
+/** Drop odds for a skill in an area, as resource name + rounded percent (common → rare). */
+export function areaOdds(areaId: string, skillId: string): { name: string; pct: number }[] {
+  const table = areaDropTable(areaId, skillId);
+  const sum = table.reduce((a, t) => a + t.weight, 0) || 1;
+  return table.map((t) => ({ name: RESOURCES[t.resourceId].name, pct: Math.round((t.weight / sum) * 100) }));
 }
 
 /** The multitool ladder — one tool line for every skill. Each tier needs a total gathering level +

@@ -15,8 +15,8 @@ import {
   GATHER_SKILL_MAP,
   GATHER_TALENTS,
   GATHER_TOOLS,
-  RESOURCES,
-  areaDropTable,
+  areaAbundance,
+  areaOdds,
   areaSkills,
   toolName,
 } from "../gather-config";
@@ -48,45 +48,44 @@ export function renderGather(
   preview: GatherPreview,
   notice?: string,
 ): RpgScreen {
-  const levelLine = GATHER_SKILLS.map((s) => `${s.name} ${levels.perSkill[s.id] ?? 1}`).join("  ·  ");
+  const levelLine = GATHER_SKILLS.map((s) => `${s.emoji} ${levels.perSkill[s.id] ?? 1}`).join("   ");
 
   let now: string;
-  if (preview.active && preview.skillId) {
-    const sk = GATHER_SKILL_MAP[preview.skillId];
-    const area = preview.areaId ? GATHER_AREA_MAP[preview.areaId] : undefined;
+  if (preview.active && preview.areaId) {
+    const area = GATHER_AREA_MAP[preview.areaId];
     now = [
-      `**${sk?.verb ?? "Gathering"}** at **${area?.name ?? "?"}**`,
-      `Banked **${(preview.totalUnits ?? 0).toLocaleString()}** drops · +${(preview.xp ?? 0).toLocaleString()} xp${preview.wasCapped ? " · idle cap reached" : ""}`,
+      `📍 Gathering at **${area?.name ?? "?"}**`,
+      `Ready to collect: **${(preview.totalUnits ?? 0).toLocaleString()}** drops (+${(preview.xp ?? 0).toLocaleString()} xp)${preview.wasCapped ? "  ·  idle cap reached" : ""}`,
     ].join("\n");
   } else {
-    now = "Not gathering — pick an area below to begin.";
+    now = "Not gathering. Travel to an area below to begin.";
   }
 
-  const unlocked = GATHER_AREAS.filter((a) => levels.total >= a.reqLevel);
-  const locked = GATHER_AREAS.length - unlocked.length;
-  const areaList = unlocked.map((a) => `**${a.name}** — ${skillNames(a.id)}`).join("\n");
+  const areaList = GATHER_AREAS.map((a) => {
+    const locked = levels.total < a.reqLevel;
+    const good = areaSkills(a)
+      .map((s) => `${GATHER_SKILL_MAP[s].emoji} ${areaAbundance(a.id, s)} ${GATHER_SKILL_MAP[s].noun}`)
+      .join(", ");
+    return `${locked ? "🔒 " : ""}**${a.name}** (Lv ${a.reqLevel})  ${good}`;
+  }).join("\n");
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle("Gathering")
-    .setDescription(notice ?? "Progress builds in real time — even while you're offline. Reopen to refresh, then Collect.")
+    .setTitle("⛏️ Gathering")
+    .setDescription(notice ?? "Progress builds in real time, even while you're offline. Reopen to refresh, then Collect.")
     .addFields(
-      { name: "Skills", value: `${levelLine}\nTotal **${levels.total}** · Tool: ${toolName(player.toolTier)}`, inline: false },
+      { name: "Skills", value: `${levelLine}\nTotal **${levels.total}**   🛠️ ${toolName(player.toolTier)}`, inline: false },
       { name: "Now", value: now, inline: false },
-      {
-        name: "Areas",
-        value: areaList + (locked > 0 ? `\n*+${locked} more unlock at higher total level.*` : ""),
-        inline: false,
-      },
+      { name: "Areas", value: areaList, inline: false },
     );
 
   const travel = new StringSelectMenuBuilder()
     .setCustomId(buildId(user.id, "gather", "area"))
     .setPlaceholder("Travel to an area…")
     .addOptions(
-      unlocked.slice(0, 25).map((a) => ({
+      GATHER_AREAS.slice(0, 25).map((a) => ({
         label: a.name,
-        description: skillNames(a.id).slice(0, 100),
+        description: `Lv ${a.reqLevel}  ·  ${skillNames(a.id)}`.slice(0, 100),
         value: a.id,
       })),
     );
@@ -95,20 +94,24 @@ export function renderGather(
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "gather", "collect"))
       .setLabel("Collect")
+      .setEmoji("📥")
       .setStyle(ButtonStyle.Success)
       .setDisabled(!preview.active),
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "gather", "stop"))
       .setLabel("Stop")
+      .setEmoji("✋")
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(!preview.active),
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "gather", "tools"))
       .setLabel("Tools")
+      .setEmoji("🛠️")
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "gather", "talents"))
       .setLabel("Talents")
+      .setEmoji("🌟")
       .setStyle(ButtonStyle.Secondary),
     back(user.id, "hub"),
   );
@@ -119,8 +122,8 @@ export function renderGather(
   };
 }
 
-/** Area detail: what each offered skill yields here, and a button to start that skill. */
-export function renderArea(user: User, areaId: string, notice?: string): RpgScreen {
+/** Area detail (Overview): the drop odds for every skill the area offers. You gather them all. */
+export function renderArea(user: User, areaId: string, total: number, notice?: string): RpgScreen {
   const area = GATHER_AREA_MAP[areaId];
   if (!area) {
     return {
@@ -129,27 +132,35 @@ export function renderArea(user: User, areaId: string, notice?: string): RpgScre
     };
   }
 
-  const skills = areaSkills(area);
-  const lines = skills.map((s) => {
-    const names = areaDropTable(area.id, s).map((d) => RESOURCES[d.resourceId].name);
-    return `**${GATHER_SKILL_MAP[s].name}** — ${names.join(", ")}`;
+  const locked = total < area.reqLevel;
+  const blocks = areaSkills(area).map((s) => {
+    const sk = GATHER_SKILL_MAP[s];
+    const odds = areaOdds(area.id, s)
+      .map((o) => `${o.name} ${o.pct}%`)
+      .join("   ");
+    return `${sk.emoji} **${sk.name}**  (${areaAbundance(area.id, s)} ${sk.noun})\n${odds}`;
   });
+
+  const lines = [notice ? `*${notice}*` : area.blurb];
+  if (locked) lines.push(`🔒 Requires total gathering level **${area.reqLevel}**.`);
+  lines.push("", "You gather everything here at once.", "", ...blocks);
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle(area.name)
-    .setDescription([notice ? `*${notice}*` : area.blurb, "", ...lines].join("\n"));
+    .setTitle(`📍 ${area.name}`)
+    .setDescription(lines.join("\n"));
 
   const startRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    ...skills.map((s) =>
-      new ButtonBuilder()
-        .setCustomId(buildId(user.id, "gather", "start", `${s}:${area.id}`))
-        .setLabel(GATHER_SKILL_MAP[s].name)
-        .setStyle(ButtonStyle.Success),
-    ),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "gather", "start", area.id))
+      .setLabel("Gather here")
+      .setEmoji("⛏️")
+      .setStyle(ButtonStyle.Success)
+      .setDisabled(locked),
+    back(user.id, "gather"),
   );
 
-  return { embeds: [embed], components: [startRow, new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "gather"))] };
+  return { embeds: [embed], components: [startRow] };
 }
 
 /** The multitool ladder. */
@@ -160,16 +171,17 @@ export function renderGatherTools(
   notice?: string,
 ): RpgScreen {
   const lines = GATHER_TOOLS.map((t) => {
-    const tag = player.toolTier >= t.tier ? "owned" : t.tier === player.toolTier + 1 ? "next" : `Lv ${t.reqLevel}`;
-    return `**${t.name}** _(${tag})_ — ${t.cost.toLocaleString()}g · speed ×${t.speed}, yield ×${t.efficiency}, double ${Math.round(t.doubleChance * 100)}%, +${t.capBonusH}h`;
+    const tag =
+      player.toolTier >= t.tier ? "✅ owned" : t.tier === player.toolTier + 1 ? "▶️ next" : `🔒 Lv ${t.reqLevel}`;
+    return `${tag}  **${t.name}**  (${t.cost.toLocaleString()}g)\n⚡ ×${t.speed} speed   📦 ×${t.efficiency} yield   ✨ ${Math.round(t.doubleChance * 100)}% double   ⏳ +${t.capBonusH}h`;
   });
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle("Multitools")
+    .setTitle("🛠️ Multitools")
     .setDescription(
       [
-        notice ?? `Current: **${toolName(player.toolTier)}** · total level **${total}** · ${player.gold.toLocaleString()}g`,
+        notice ?? `Current: **${toolName(player.toolTier)}**   total level **${total}**   💰 ${player.gold.toLocaleString()}g`,
         "",
         ...lines,
       ].join("\n"),
@@ -183,7 +195,8 @@ export function renderGatherTools(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
           .setCustomId(buildId(user.id, "gather", "buytool", String(next.tier)))
-          .setLabel(`Buy ${next.name} — ${next.cost.toLocaleString()}g`)
+          .setLabel(`Buy ${next.name} (${next.cost.toLocaleString()}g)`)
+          .setEmoji("🛒")
           .setStyle(ButtonStyle.Success)
           .setDisabled(!canBuy),
       ),
@@ -211,7 +224,7 @@ export function renderGatherTalents(
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle(`${sk?.name ?? "Skill"} — Talents`)
+    .setTitle(`${sk?.emoji ?? "🌟"} ${sk?.name ?? "Skill"} Talents`)
     .setDescription(
       notice ??
         (points > 0
@@ -231,7 +244,7 @@ export function renderGatherTalents(
         .setCustomId(buildId(user.id, "gather", "talentpick"))
         .setPlaceholder("View another skill…")
         .addOptions(
-          GATHER_SKILLS.map((s) => ({ label: s.name, value: s.id, default: s.id === skillId })),
+          GATHER_SKILLS.map((s) => ({ label: s.name, value: s.id, default: s.id === skillId, emoji: s.emoji })),
         ),
     ),
   );
@@ -259,6 +272,7 @@ export function renderGatherTalents(
       new ButtonBuilder()
         .setCustomId(buildId(user.id, "gather", "respecgather", skillId))
         .setLabel("Reset (free)")
+        .setEmoji("♻️")
         .setStyle(ButtonStyle.Secondary),
       back(user.id, "gather"),
     ),

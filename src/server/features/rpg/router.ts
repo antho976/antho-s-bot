@@ -162,7 +162,8 @@ async function handleGather(
 
   // Non-mutating sub-screens.
   if (action === "area" && interaction.isStringSelectMenu()) {
-    return { kind: "update", screen: renderArea(user, interaction.values[0]) };
+    const { total } = await gatheringLevels(player.id);
+    return { kind: "update", screen: renderArea(user, interaction.values[0], total) };
   }
   if (action === "tools") {
     const { total } = await gatheringLevels(player.id);
@@ -200,8 +201,7 @@ async function handleGather(
   // Mutations that return to the hub.
   let notice: string | undefined;
   if (action === "start" && route.args) {
-    const [skillId, areaId] = route.args.split(":");
-    const r = await startGather(player, skillId, areaId);
+    const r = await startGather(player, route.args);
     if (!r.ok) notice = r.reason;
   } else if (action === "collect") {
     const r = await collectGather(player);

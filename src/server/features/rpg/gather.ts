@@ -9,6 +9,7 @@ import {
   GATHER_TALENT_MAP,
   GATHER_TOOLS,
   areaDropTable,
+  areaSkills,
   toolAt,
 } from "./gather-config";
 import { computeHarvest, gatherLevel, type Rates } from "./domain/gather";
@@ -74,34 +75,43 @@ export function ratesFor(toolTier: number, ranks: Record<string, number>): Rates
 
 export type GatherPreview = {
   active: boolean;
-  skillId?: string;
   areaId?: string;
   drops?: { resourceId: string; units: number }[];
   totalUnits?: number;
   xp?: number;
+  perSkill?: { skillId: string; xp: number }[];
   wasCapped?: boolean;
 };
 
-/** Compute (without persisting) what the current session has banked so far. */
+/**
+ * Compute (without persisting) what the current session has earned so far. You gather *every* skill
+ * the area offers at once, so this aggregates across them. Pure time math — counts real elapsed
+ * time whether or not the bot was online for it.
+ */
 export async function previewGather(player: RpgPlayer): Promise<GatherPreview> {
-  const { gatherSkillId, gatherAreaId, gatherStartedAt } = player;
-  if (!gatherSkillId || !gatherAreaId || !gatherStartedAt) return { active: false };
-  const table = areaDropTable(gatherAreaId, gatherSkillId);
-  if (table.length === 0) return { active: false };
+  const { gatherAreaId, gatherStartedAt } = player;
+  if (!gatherAreaId || !gatherStartedAt) return { active: false };
+  const area = GATHER_AREA_MAP[gatherAreaId];
+  const skills = area ? areaSkills(area) : [];
+  if (skills.length === 0) return { active: false };
 
-  const ranks = await talentRanksFor(player.id, gatherSkillId);
-  const rates = ratesFor(player.toolTier, ranks);
   const elapsed = Date.now() - gatherStartedAt.getTime();
-  const h = computeHarvest(elapsed, table, rates);
-  return {
-    active: true,
-    skillId: gatherSkillId,
-    areaId: gatherAreaId,
-    drops: h.drops,
-    totalUnits: h.totalUnits,
-    xp: h.xpGained,
-    wasCapped: h.wasCapped,
-  };
+  const dropMap = new Map<string, number>();
+  const perSkill: { skillId: string; xp: number }[] = [];
+  let xp = 0;
+  let wasCapped = false;
+  for (const s of skills) {
+    const ranks = await talentRanksFor(player.id, s);
+    const rates = ratesFor(player.toolTier, ranks);
+    const h = computeHarvest(elapsed, areaDropTable(gatherAreaId, s), rates);
+    for (const d of h.drops) dropMap.set(d.resourceId, (dropMap.get(d.resourceId) ?? 0) + d.units);
+    perSkill.push({ skillId: s, xp: h.xpGained });
+    xp += h.xpGained;
+    if (h.wasCapped) wasCapped = true;
+  }
+  const drops = [...dropMap].map(([resourceId, units]) => ({ resourceId, units }));
+  const totalUnits = drops.reduce((a, d) => a + d.units, 0);
+  return { active: true, areaId: gatherAreaId, drops, totalUnits, xp, perSkill, wasCapped };
 }
 
 export type CollectResult = { totalUnits: number; xp: number } | null;
@@ -109,9 +119,9 @@ export type CollectResult = { totalUnits: number; xp: number } | null;
 /** Bank the current session's drops + xp and reset the clock (keeps gathering). */
 export async function collectGather(player: RpgPlayer): Promise<CollectResult> {
   const p = await previewGather(player);
-  if (!p.active || !p.skillId) return null;
+  if (!p.active) return null;
   for (const d of p.drops ?? []) await addItem(player.id, d.resourceId, d.units);
-  if (p.xp && p.xp > 0) await addGatherXp(player.id, p.skillId, p.xp);
+  for (const ps of p.perSkill ?? []) if (ps.xp > 0) await addGatherXp(player.id, ps.skillId, ps.xp);
   await updatePlayer(player.id, { gatherStartedAt: new Date() });
   return { totalUnits: p.totalUnits ?? 0, xp: p.xp ?? 0 };
 }
@@ -119,22 +129,16 @@ export async function collectGather(player: RpgPlayer): Promise<CollectResult> {
 export type StartResult = { ok: boolean; reason?: string };
 
 /** Begin gathering a skill in an area (banks any prior session first). Validates level + offering. */
-export async function startGather(
-  player: RpgPlayer,
-  skillId: string,
-  areaId: string,
-): Promise<StartResult> {
+export async function startGather(player: RpgPlayer, areaId: string): Promise<StartResult> {
   const area = GATHER_AREA_MAP[areaId];
-  if (!area || areaDropTable(areaId, skillId).length === 0) {
-    return { ok: false, reason: "That area doesn't offer that skill." };
-  }
+  if (!area || areaSkills(area).length === 0) return { ok: false, reason: "Unknown area." };
   const { total } = await gatheringLevels(player.id);
   if (total < area.reqLevel) {
     return { ok: false, reason: `${area.name} needs total gathering level ${area.reqLevel}.` };
   }
   await collectGather(player); // bank whatever the previous session earned
   await updatePlayer(player.id, {
-    gatherSkillId: skillId,
+    gatherSkillId: null,
     gatherAreaId: areaId,
     gatherStartedAt: new Date(),
   });
