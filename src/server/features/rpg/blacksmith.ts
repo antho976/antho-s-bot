@@ -138,6 +138,64 @@ export async function upgradeWeapon(player: RpgPlayer, rowId: number): Promise<U
   return { ok: true, weapon: weaponFromRow({ ...row, instanceStatsJson: nextJson }, player.equippedWeaponId) ?? undefined };
 }
 
+export type MultiUpgradeResult = UpgradeResult & { applied: number; spentGold: number };
+
+/**
+ * Enhance a weapon as many times as gold + materials allow, up to its max — one batched write.
+ * The per-level cost climbs, so we tally affordable steps first, then persist the consumed
+ * materials, gold, and accrued profession XP in one go.
+ */
+export async function upgradeWeaponMax(player: RpgPlayer, rowId: number): Promise<MultiUpgradeResult> {
+  const row = await getInventoryRow(rowId);
+  if (!row || row.playerId !== player.id || !RECIPE_BY_ID[row.itemId]) {
+    return { ok: false, reason: "Weapon not found.", applied: 0, spentGold: 0 };
+  }
+  const recipe = RECIPE_BY_ID[row.itemId];
+  let upgrade = parseWeaponStats(row.instanceStatsJson).upgrade;
+  if (upgrade >= recipe.maxUpgrade) {
+    return { ok: false, reason: "Already at max enhancement.", applied: 0, spentGold: 0 };
+  }
+
+  const counts = await materialCounts(player.id);
+  let gold = player.gold;
+  let spentGold = 0;
+  let xp = 0;
+  let applied = 0;
+  const consumed: Record<string, number> = {};
+
+  while (upgrade < recipe.maxUpgrade) {
+    const cost = upgradeCost(recipe, upgrade);
+    if (gold < cost.gold) break;
+    if (cost.items.some((it) => (counts[it.itemId] ?? 0) < it.qty)) break;
+    gold -= cost.gold;
+    spentGold += cost.gold;
+    for (const it of cost.items) {
+      counts[it.itemId] = (counts[it.itemId] ?? 0) - it.qty;
+      consumed[it.itemId] = (consumed[it.itemId] ?? 0) + it.qty;
+    }
+    xp += upgradeXp(recipe, upgrade);
+    upgrade += 1;
+    applied += 1;
+  }
+
+  if (applied === 0) {
+    return { ok: false, reason: "Can't afford the next enhancement.", applied: 0, spentGold: 0 };
+  }
+
+  for (const [itemId, qty] of Object.entries(consumed)) await removeItemQty(player.id, itemId, qty);
+  await updatePlayer(player.id, { gold });
+  const nextJson = JSON.stringify({ upgrade });
+  await updateInventoryRow(rowId, { instanceStatsJson: nextJson });
+  await addProfessionXp(player.id, BLACKSMITH_ID, xp);
+
+  return {
+    ok: true,
+    applied,
+    spentGold,
+    weapon: weaponFromRow({ ...row, instanceStatsJson: nextJson }, player.equippedWeaponId) ?? undefined,
+  };
+}
+
 export async function equipWeapon(player: RpgPlayer, rowId: number): Promise<{ ok: boolean; reason?: string }> {
   const row = await getInventoryRow(rowId);
   if (!row || row.playerId !== player.id || !RECIPE_BY_ID[row.itemId]) {

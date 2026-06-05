@@ -45,7 +45,7 @@ import {
   renderGatherTools,
   renderSkillAreas,
 } from "./views/gather";
-import { renderAdventureResult, renderCombat, renderEncounter } from "./views/combat";
+import { renderAdventure, renderAdventureResult, renderCombatHome, renderEncounter } from "./views/combat";
 import { renderInventory } from "./views/inventory";
 import {
   blacksmithLevel,
@@ -57,6 +57,7 @@ import {
   materialCounts,
   unequipWeapon,
   upgradeWeapon,
+  upgradeWeaponMax,
 } from "./blacksmith";
 import {
   renderBlacksmith,
@@ -166,7 +167,7 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
           const out = await startAdventure(fresh, difficulty);
           if (out.kind === "no_charge") {
             const { player: p, charges } = await withCharges(fresh);
-            return { kind: "update", screen: renderCombat(p, interaction.user, charges, "Out of charges — rest up.") };
+            return { kind: "update", screen: renderAdventure(p, interaction.user, charges, "Out of charges — rest up.") };
           }
           if (out.kind === "encounter") {
             return { kind: "update", screen: renderEncounter(out.player, interaction.user, out.encounter) };
@@ -176,13 +177,17 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
         }
       }
 
-      // No (or finished) action: resume an in-progress pack fight, else show the picker.
+      // A live pack fight always takes priority — resume it.
       if (fresh.adventureEncounterJson) {
         const enc = JSON.parse(fresh.adventureEncounterJson) as Encounter;
         return { kind: "update", screen: renderEncounter(fresh, interaction.user, enc) };
       }
+      // Bare "combat" → the Combat home; any adventure action → the Adventure picker.
+      if (!route.action) {
+        return { kind: "update", screen: renderCombatHome(interaction.user) };
+      }
       const { player: cp, charges } = await withCharges(fresh);
-      return { kind: "update", screen: renderCombat(cp, interaction.user, charges) };
+      return { kind: "update", screen: renderAdventure(cp, interaction.user, charges) };
     }
     case "skills": {
       if (route.action === "actives") {
@@ -369,6 +374,16 @@ async function handleSmith(
     const weapon = await getWeapon(p2, Number(route.args));
     if (!weapon) return { kind: "update", screen: renderWeapons(user, await listWeapons(p2), r.reason) };
     return { kind: "update", screen: renderWeaponDetail(user, weapon, p2, r.ok ? "Enhanced!" : r.reason) };
+  }
+  if (action === "upgrademax" && route.args) {
+    const r = await upgradeWeaponMax(player, Number(route.args));
+    const p2 = (await getPlayer(guildId, user.id)) ?? player;
+    const weapon = await getWeapon(p2, Number(route.args));
+    if (!weapon) return { kind: "update", screen: renderWeapons(user, await listWeapons(p2), r.reason) };
+    const notice = r.ok
+      ? `Enhanced ×${r.applied} for ${r.spentGold.toLocaleString()} gold.`
+      : r.reason;
+    return { kind: "update", screen: renderWeaponDetail(user, weapon, p2, notice) };
   }
   if ((action === "equip" || action === "unequip") && route.args) {
     if (action === "equip") await equipWeapon(player, Number(route.args));

@@ -34,8 +34,43 @@ function backButton(ownerId: string, label: string): ButtonBuilder {
     .setStyle(ButtonStyle.Secondary);
 }
 
-/** The Combat landing screen: how adventures work, your charges, and a difficulty button per option. */
-export function renderCombat(
+/** The Combat landing screen — explains the two combat modes and routes to each. */
+export function renderCombatHome(user: User): RpgScreen {
+  const embed = new EmbedBuilder()
+    .setColor(RPG.embedColor)
+    .setTitle("⚔️ Combat")
+    .setDescription(
+      [
+        "Pick how you want to fight:",
+        "",
+        "⚔️ **Adventures** — quick fights for **XP**, **gold** & **keys**. Spend a charge; a lone foe resolves instantly, while tougher tiers throw **packs** you fight turn-by-turn.",
+        "💀 **Dungeons** — multi-room runs that cost a **key**. Active, turn-based combat with your class abilities — deadlier, but richer loot.",
+      ].join("\n"),
+    );
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "combat", "adventure"))
+      .setLabel("Adventures")
+      .setEmoji("⚔️")
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "dungeon"))
+      .setLabel("Dungeons")
+      .setEmoji("💀")
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "hub"))
+      .setLabel("Back")
+      .setEmoji("◀️")
+      .setStyle(ButtonStyle.Secondary),
+  );
+
+  return { embeds: [embed], components: [row] };
+}
+
+/** The Adventure picker: your charges + a difficulty button per option. */
+export function renderAdventure(
   player: RpgPlayer,
   user: User,
   charges: Charges,
@@ -77,11 +112,10 @@ export function renderCombat(
 
   const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(buildId(user.id, "dungeon"))
-      .setLabel("Dungeons")
-      .setEmoji("💀")
-      .setStyle(ButtonStyle.Danger),
-    backButton(user.id, "Back"),
+      .setCustomId(buildId(user.id, "combat"))
+      .setLabel("Back")
+      .setEmoji("◀️")
+      .setStyle(ButtonStyle.Secondary),
   );
 
   return { embeds: [embed], components: [diffRow, nav] };
@@ -159,7 +193,7 @@ export function renderAdventureResult(report: AdventureReport, user: User): RpgS
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(buildId(user.id, "combat"))
+      .setCustomId(buildId(user.id, "combat", "adventure"))
       .setLabel("Adventure again")
       .setEmoji("⚔️")
       .setStyle(ButtonStyle.Primary),

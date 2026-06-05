@@ -186,6 +186,12 @@ export function renderWeaponDetail(
       .setStyle(ButtonStyle.Success)
       .setDisabled(maxed),
     new ButtonBuilder()
+      .setCustomId(buildId(user.id, "smith", "upgrademax", String(weapon.rowId)))
+      .setLabel("Enhance Max")
+      .setEmoji("⏫")
+      .setStyle(ButtonStyle.Success)
+      .setDisabled(maxed),
+    new ButtonBuilder()
       .setCustomId(buildId(user.id, "smith", weapon.equipped ? "unequip" : "equip", String(weapon.rowId)))
       .setLabel(weapon.equipped ? "Unequip" : "Equip")
       .setEmoji(weapon.equipped ? "❎" : "✅")
