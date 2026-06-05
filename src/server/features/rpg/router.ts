@@ -38,7 +38,7 @@ import {
 } from "./views/gather";
 import { renderAdventureResult, renderCombat } from "./views/combat";
 import { renderInventory } from "./views/inventory";
-import { renderHub } from "./views/hub";
+import { renderHub, renderPlayer } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
 import { renderDeleteConfirm, renderOptions } from "./views/options";
 import { renderPlaceholder } from "./views/scaffold";
@@ -93,6 +93,8 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
   switch (route.view) {
     case "hub":
       return { kind: "update", screen: renderHub(fresh, interaction.user) };
+    case "player":
+      return { kind: "update", screen: renderPlayer(fresh, interaction.user) };
     case "combat": {
       if (route.action === "go") {
         const difficulty = route.args ? DIFFICULTY_MAP[route.args] : undefined;

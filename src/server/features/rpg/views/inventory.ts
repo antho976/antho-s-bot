@@ -58,7 +58,7 @@ export function renderInventory(user: User, rows: RpgInventoryRow[]): RpgScreen 
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(buildId(user.id, "hub"))
+      .setCustomId(buildId(user.id, "player"))
       .setLabel("Back")
       .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),

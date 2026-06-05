@@ -62,3 +62,37 @@ export function renderHub(player: RpgPlayer, user: User): RpgScreen {
 
   return { embeds: [embed], components: categoryRows(user.id) };
 }
+
+/** The "Player" sub-menu — Inventory and Skills live here, one Back away from the hub. */
+export function renderPlayer(player: RpgPlayer, user: User): RpgScreen {
+  const cls = classDef(player.classId);
+  const name = player.name ?? user.displayName;
+
+  const embed = new EmbedBuilder()
+    .setColor(RPG.embedColor)
+    .setAuthor({
+      name: `${name} • Level ${player.level} • ${cls.name}`,
+      iconURL: user.displayAvatarURL({ size: 128 }),
+    })
+    .setDescription("Check your pack or spend your skill points.");
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "inventory"))
+      .setLabel("Inventory")
+      .setEmoji("🎒")
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "skills"))
+      .setLabel("Skills")
+      .setEmoji("🌳")
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "hub"))
+      .setLabel("Back")
+      .setEmoji("◀️")
+      .setStyle(ButtonStyle.Secondary),
+  );
+
+  return { embeds: [embed], components: [row] };
+}

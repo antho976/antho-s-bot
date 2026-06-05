@@ -19,7 +19,7 @@ import type { RpgScreen } from "./types";
 function backOnlyRow(ownerId: string): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(buildId(ownerId, "hub"))
+      .setCustomId(buildId(ownerId, "player"))
       .setLabel("Back")
       .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),
@@ -100,7 +100,7 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
         .setEmoji("♻️")
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
-        .setCustomId(buildId(user.id, "hub"))
+        .setCustomId(buildId(user.id, "player"))
         .setLabel("Back")
         .setEmoji("◀️")
         .setStyle(ButtonStyle.Secondary),
