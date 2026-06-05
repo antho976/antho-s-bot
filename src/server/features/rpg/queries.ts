@@ -101,6 +101,13 @@ export async function addItem(playerId: number, itemId: string, qty: number): Pr
   }
 }
 
+export type RpgInventoryRow = typeof rpgInventory.$inferSelect;
+
+/** Every inventory row a player owns (resources + items). */
+export function listInventory(playerId: number): Promise<RpgInventoryRow[]> {
+  return db.select().from(rpgInventory).where(eq(rpgInventory.playerId, playerId));
+}
+
 // --- Gathering -------------------------------------------------------------------------------
 
 /** Per-skill cumulative gathering xp as a map (missing skill = 0). */

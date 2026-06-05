@@ -9,6 +9,7 @@ import {
   getAllocatedNodeIds,
   getGatheringXp,
   getPlayer,
+  listInventory,
   respecSkills,
   type RpgPlayer,
 } from "./queries";
@@ -35,6 +36,7 @@ import {
   renderGatherTools,
 } from "./views/gather";
 import { renderAdventureResult, renderCombat } from "./views/combat";
+import { renderInventory } from "./views/inventory";
 import { renderHub } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
 import { renderDeleteConfirm, renderOptions } from "./views/options";
@@ -144,7 +146,10 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
     }
     case "gather":
       return handleGather(interaction, route, fresh, guildId);
-    case "inventory":
+    case "inventory": {
+      const rows = await listInventory(fresh.id);
+      return { kind: "update", screen: renderInventory(interaction.user, rows) };
+    }
     case "guild":
     case "quests":
       return {
