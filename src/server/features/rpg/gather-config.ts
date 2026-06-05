@@ -14,13 +14,20 @@ export const GATHER = {
 
 export type GatherSkillId = "mining" | "woodcutting" | "herbalism" | "fishing";
 
-export type GatherSkill = { id: GatherSkillId; name: string; verb: string; emoji: string; noun: string };
+export type GatherSkill = {
+  id: GatherSkillId;
+  name: string;
+  verb: string;
+  emoji: string;
+  noun: string;
+  desc: string;
+};
 
 export const GATHER_SKILLS: GatherSkill[] = [
-  { id: "mining", name: "Mining", verb: "Mining", emoji: "⛏️", noun: "veins" },
-  { id: "woodcutting", name: "Woodcutting", verb: "Chopping", emoji: "🪓", noun: "timber" },
-  { id: "herbalism", name: "Herbalism", verb: "Foraging", emoji: "🌿", noun: "herbs" },
-  { id: "fishing", name: "Fishing", verb: "Fishing", emoji: "🎣", noun: "shoals" },
+  { id: "mining", name: "Mining", verb: "Mining", emoji: "⛏️", noun: "veins", desc: "Break ore from the rock for metals." },
+  { id: "woodcutting", name: "Woodcutting", verb: "Chopping", emoji: "🪓", noun: "timber", desc: "Fell trees for logs." },
+  { id: "herbalism", name: "Herbalism", verb: "Foraging", emoji: "🌿", noun: "herbs", desc: "Forage herbs and rare blooms." },
+  { id: "fishing", name: "Fishing", verb: "Fishing", emoji: "🎣", noun: "shoals", desc: "Cast for fish from shore and sea." },
 ];
 
 export const GATHER_SKILL_MAP: Record<string, GatherSkill> = Object.fromEntries(
@@ -155,6 +162,11 @@ export function areaOdds(areaId: string, skillId: string): { name: string; pct: 
   const table = areaDropTable(areaId, skillId);
   const sum = table.reduce((a, t) => a + t.weight, 0) || 1;
   return table.map((t) => ({ name: RESOURCES[t.resourceId].name, pct: Math.round((t.weight / sum) * 100) }));
+}
+
+/** Every resource a skill can drop, common → rare (for the guide). */
+export function ladderNames(skillId: string): string[] {
+  return LADDER[skillId as GatherSkillId].map((id) => RESOURCES[id].name);
 }
 
 /** The multitool ladder — one tool line for every skill. Each tier needs a total gathering level +

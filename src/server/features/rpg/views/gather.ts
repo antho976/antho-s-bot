@@ -18,6 +18,7 @@ import {
   areaAbundance,
   areaOdds,
   areaSkills,
+  ladderNames,
   toolName,
 } from "../gather-config";
 import type { GatherPreview, GatheringLevels } from "../gather";
@@ -159,13 +160,58 @@ export function renderGather(
       .setLabel("Talents")
       .setEmoji("🌟")
       .setStyle(ButtonStyle.Secondary),
+  );
+
+  const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "gather", "guide"))
+      .setLabel("Guide")
+      .setEmoji("📖")
+      .setStyle(ButtonStyle.Secondary),
     back(user.id, "hub"),
   );
 
   return {
     embeds: [embed],
-    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(travel), actions],
+    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(travel), actions, nav],
   };
+}
+
+/** Reference screen: what every skill does, what it drops, and how talents + tools work. */
+export function renderGatherGuide(user: User): RpgScreen {
+  const embed = new EmbedBuilder()
+    .setColor(RPG.embedColor)
+    .setTitle("📖 Gathering Guide")
+    .setDescription(
+      [
+        "Travel to an area and gather **every skill it offers at once**. Drops and skill XP build in **real time** — even while you're offline — up to a **12h** cap. Press **Collect** to bank them.",
+        "Each skill levels from its own XP; your levels add into a **Total** that unlocks new areas and better tools.",
+      ].join("\n\n"),
+    )
+    .addFields(
+      ...GATHER_SKILLS.map((s) => ({
+        name: `${s.emoji} ${s.name}`,
+        value: `${s.desc}\n${ladderNames(s.id).join(" → ")}`,
+        inline: true,
+      })),
+      {
+        name: "🌟 Talents (per skill)",
+        value: `${GATHER_TALENTS.map((t) => `**${t.name}** — ${t.unit}`).join("\n")}\n*1 point per skill level; reset any talent for a free refund.*`,
+        inline: false,
+      },
+      {
+        name: "🛠️ Multitools",
+        value:
+          "One tool covers every skill. Higher tiers gather faster, yield more, double drops more often, and idle longer — bought with gold, gated by your total level.",
+        inline: false,
+      },
+    );
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    back(user.id, "gather"),
+    hubButton(user.id),
+  );
+  return { embeds: [embed], components: [row] };
 }
 
 /** Area detail (Overview): the drop odds for every skill the area offers. You gather them all. */

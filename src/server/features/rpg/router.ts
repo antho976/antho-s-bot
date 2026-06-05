@@ -30,6 +30,7 @@ import { GATHER_SKILLS } from "./gather-config";
 import {
   renderArea,
   renderGather,
+  renderGatherGuide,
   renderGatherTalents,
   renderGatherTools,
 } from "./views/gather";
@@ -164,6 +165,9 @@ async function handleGather(
   if (action === "area" && interaction.isStringSelectMenu()) {
     const { total } = await gatheringLevels(player.id);
     return { kind: "update", screen: renderArea(user, interaction.values[0], total) };
+  }
+  if (action === "guide") {
+    return { kind: "update", screen: renderGatherGuide(user) };
   }
   if (action === "tools") {
     const { total } = await gatheringLevels(player.id);
