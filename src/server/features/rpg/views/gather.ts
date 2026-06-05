@@ -191,14 +191,14 @@ export function renderSkillAreas(user: User, skillId: string, levels: GatheringL
   // version would blow Discord's 4096-char description limit, drop the odds, then hard-truncate.
   const block = (a: GatherArea, withOdds: boolean): string => {
     const order = [skillId, ...areaSkills(a).filter((s) => s !== skillId)];
-    const rows = order.map((s) => {
+    const rows = order.map((s, i) => {
       const ss = GATHER_SKILL_MAP[s];
       const head = `${ss?.emoji ?? ""} ${areaAbundance(a.id, s)} ${ss?.noun ?? ""}`;
-      if (!withOdds) return head;
-      const odds = areaOdds(a.id, s)
-        .map((o) => `${o.name} ${o.pct}%`)
-        .join("   ");
-      return `${head}: ${odds}`;
+      const odds = withOdds
+        ? `: ${areaOdds(a.id, s).map((o) => `${o.name} ${o.pct}%`).join("   ")}`
+        : "";
+      // The chosen skill sits at the base; the other skills nest under it with an L bracket.
+      return i === 0 ? `${head}${odds}` : `　 ┗ ${head}${odds}`;
     });
     const lock = levels.total < a.reqLevel ? "🔒 " : "";
     return `${lock}**${a.name}** (Lv ${a.reqLevel})\n${rows.join("\n")}`;
