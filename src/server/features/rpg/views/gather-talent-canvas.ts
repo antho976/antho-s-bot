@@ -214,19 +214,19 @@ function drawTalentCard(
 
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.font = "bold 29px sans-serif";
+  ctx.font = "bold 32px sans-serif";
   ctx.fillStyle = maxed ? "#ffd54f" : "#ffffff";
-  ctx.fillText(tal.name, x + pad, y + 46);
+  ctx.fillText(tal.name, x + pad, y + 48);
 
   ctx.textAlign = "right";
-  ctx.font = "bold 24px sans-serif";
+  ctx.font = "bold 26px sans-serif";
   ctx.fillStyle = accent;
-  ctx.fillText(`${rank}/${tal.maxRank}`, x + w - pad, y + 46);
+  ctx.fillText(`${rank}/${tal.maxRank}`, x + w - pad, y + 48);
 
   ctx.textAlign = "left";
-  ctx.font = "bold 24px sans-serif";
+  ctx.font = "bold 27px sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.fillText(`${tal.unit} per rank`, x + pad, y + 88);
+  ctx.fillText(`${tal.unit} per rank`, x + pad, y + 92);
 
   // Rank pips: filled up to the current rank, each coloured on a green→orange ramp so the level
   // invested is distinguishable at a glance (rank 1 green … max rank orange).
@@ -270,7 +270,7 @@ export function renderGatherTalentsImage(
   ctx.font = "bold 32px sans-serif";
   outlined(ctx, `${skill?.name ?? "Gathering"} — Talents`, 30, 50, "#ffffff");
   ctx.textAlign = "right";
-  ctx.font = "bold 20px sans-serif";
+  ctx.font = "bold 24px sans-serif";
   outlined(ctx, `Level ${level}  ·  ${points} ${points === 1 ? "point" : "points"}`, W - 30, 50, theme.accent);
 
   // Four talents in a 2×2 grid.
