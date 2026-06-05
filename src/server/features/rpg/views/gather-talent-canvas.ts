@@ -214,19 +214,19 @@ function drawTalentCard(
 
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.font = "bold 25px sans-serif";
+  ctx.font = "bold 29px sans-serif";
   ctx.fillStyle = maxed ? "#ffd54f" : "#ffffff";
-  ctx.fillText(tal.name, x + pad, y + 42);
+  ctx.fillText(tal.name, x + pad, y + 46);
 
   ctx.textAlign = "right";
-  ctx.font = "bold 22px sans-serif";
+  ctx.font = "bold 24px sans-serif";
   ctx.fillStyle = accent;
-  ctx.fillText(`${rank}/${tal.maxRank}`, x + w - pad, y + 42);
+  ctx.fillText(`${rank}/${tal.maxRank}`, x + w - pad, y + 46);
 
   ctx.textAlign = "left";
-  ctx.font = "17px sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.78)";
-  ctx.fillText(`${tal.unit} per rank`, x + pad, y + 72);
+  ctx.font = "bold 24px sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.fillText(`${tal.unit} per rank`, x + pad, y + 88);
 
   // Rank pips: filled up to the current rank, each coloured on a green→orange ramp so the level
   // invested is distinguishable at a glance (rank 1 green … max rank orange).
