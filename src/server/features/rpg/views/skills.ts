@@ -131,7 +131,7 @@ export function renderActiveSkills(
   if (actives.length === 0) {
     const embed = new EmbedBuilder()
       .setColor(RPG.embedColor)
-      .setTitle(`⚡  ${cls.name} — Active Skills`)
+      .setTitle(`⚡  ${cls.name} Active Skills`)
       .setDescription("This class has no active skills yet.");
     return { embeds: [embed], components: [backOnlyRow(user.id)] };
   }
@@ -142,7 +142,7 @@ export function renderActiveSkills(
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle(`⚡  ${cls.name} — Active Skills`)
+    .setTitle(`⚡  ${cls.name} Active Skills`)
     .setDescription(
       [
         `**${selected.name}**  ${unlocked ? "✅ Unlocked" : "🔒 Locked"}`,
