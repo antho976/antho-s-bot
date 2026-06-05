@@ -61,23 +61,33 @@ export function renderGather(
     now = "Not gathering. Travel to an area below to begin.";
   }
 
-  const areaList = GATHER_AREAS.map((a) => {
+  // Area names use `###` markdown headers to read bigger — headers only render in the embed
+  // description (not inside a field value), so the whole hub body lives in the description.
+  const areaBlocks = GATHER_AREAS.map((a) => {
     const locked = levels.total < a.reqLevel;
     const good = areaSkills(a)
       .map((s) => `${GATHER_SKILL_MAP[s].emoji} ${areaAbundance(a.id, s)} ${GATHER_SKILL_MAP[s].noun}`)
       .join(", ");
-    return `${locked ? "🔒 " : ""}**${a.name}** (Lv ${a.reqLevel})\n${good}`;
+    return `### ${locked ? "🔒 " : ""}${a.name} (Lv ${a.reqLevel})\n${good}`;
   }).join("\n");
+
+  const body: string[] = [];
+  if (notice) body.push(`*${notice}*`, "");
+  body.push(
+    `Total **${levels.total}**`,
+    levelLine,
+    `🛠️ ${toolName(player.toolTier)}`,
+    "",
+    now,
+    "",
+    areaBlocks,
+  );
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
     .setTitle("⛏️ Gathering")
-    .setDescription(notice ?? "Progress builds in real time, even while you're offline. Reopen to refresh, then Collect.")
-    .addFields(
-      { name: "Skills", value: `Total **${levels.total}**\n${levelLine}\n🛠️ ${toolName(player.toolTier)}`, inline: false },
-      { name: "Now", value: now, inline: false },
-      { name: "Areas", value: areaList, inline: false },
-    );
+    .setDescription(body.join("\n"))
+    .setFooter({ text: "Progress builds in real time, even while offline. Reopen to refresh, then Collect." });
 
   const travel = new StringSelectMenuBuilder()
     .setCustomId(buildId(user.id, "gather", "area"))
