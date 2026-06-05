@@ -63,7 +63,17 @@ export function renderGather(
 
   // Area names use `###` markdown headers to read bigger — headers only render in the embed
   // description (not inside a field value), so the whole hub body lives in the description.
-  const areaBlocks = GATHER_AREAS.map((a) => {
+  //
+  // The embed only lists a window of relevant areas: the two most-recent unlocked req tiers plus the
+  // next locked tier (a goal). Outgrown low tiers fall off. The Travel menu below still has them all.
+  const tiers = [...new Set(GATHER_AREAS.map((a) => a.reqLevel))].sort((x, y) => x - y);
+  const unlocked = tiers.filter((t) => t <= levels.total);
+  const nextLocked = tiers.find((t) => t > levels.total);
+  const keep = new Set<number>([...unlocked.slice(-2), ...(nextLocked !== undefined ? [nextLocked] : [])]);
+  const shownAreas = GATHER_AREAS.filter((a) => keep.has(a.reqLevel));
+  const hidden = GATHER_AREAS.length - shownAreas.length;
+
+  const areaBlocks = shownAreas.map((a) => {
     const locked = levels.total < a.reqLevel;
     const good = areaSkills(a)
       .map((s) => `${GATHER_SKILL_MAP[s].emoji} ${areaAbundance(a.id, s)} ${GATHER_SKILL_MAP[s].noun}`)
@@ -73,15 +83,10 @@ export function renderGather(
 
   const body: string[] = [];
   if (notice) body.push(`*${notice}*`, "");
-  body.push(
-    `Total **${levels.total}**`,
-    levelLine,
-    `🛠️ ${toolName(player.toolTier)}`,
-    "",
-    now,
-    "",
-    areaBlocks,
-  );
+  body.push(`Total **${levels.total}**`, levelLine, `🛠️ ${toolName(player.toolTier)}`, "", now, "", areaBlocks);
+  if (hidden > 0) {
+    body.push("", `-# Showing areas near your level — all ${GATHER_AREAS.length} are in the Travel menu.`);
+  }
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
