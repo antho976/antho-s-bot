@@ -110,12 +110,13 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
   return { embeds: [embed], components, files: [image] };
 }
 
-/** Active-skill viewer: pick an active from the menu to read exactly what it does. */
+/** Active-skill viewer: lists every active the class has at once — what each does and whether you've
+ *  unlocked it. (Actives are dormant until the dungeon engine.) */
 export function renderActiveSkills(
   player: RpgPlayer,
   user: User,
   nodeIds: string[],
-  selectedId?: string,
+  _selectedId?: string,
 ): RpgScreen {
   const tree = getTree(player.classId);
   const cls = classDef(player.classId);
@@ -128,43 +129,26 @@ export function renderActiveSkills(
   }
 
   const actives = tree.nodes.filter((n) => n.type === "active");
+  const embed = new EmbedBuilder().setColor(RPG.embedColor).setTitle(`⚡  ${cls.name} Active Skills`);
+
   if (actives.length === 0) {
-    const embed = new EmbedBuilder()
-      .setColor(RPG.embedColor)
-      .setTitle(`⚡  ${cls.name} Active Skills`)
-      .setDescription("This class has no active skills yet.");
+    embed.setDescription("This class has no active skills yet.");
     return { embeds: [embed], components: [backOnlyRow(user.id)] };
   }
 
+  // One field per active so the name renders as a bold header (bigger than body text) and every
+  // skill is visible at once, rather than one-at-a-time behind a picker.
   const allocated = new Set(nodeIds);
-  const selected = actives.find((a) => a.id === selectedId) ?? actives[0];
-  const unlocked = allocated.has(selected.id);
-
-  const embed = new EmbedBuilder()
-    .setColor(RPG.embedColor)
-    .setTitle(`⚡  ${cls.name} Active Skills`)
+  const unlockedCount = actives.filter((a) => allocated.has(a.id)).length;
+  embed
     .setDescription(
-      [
-        `**${selected.name}**  ${unlocked ? "✅ Unlocked" : "🔒 Locked"}`,
-        "",
-        selected.detail ?? selected.desc,
-        "",
-        unlocked
-          ? "_Active skills are used in Dungeons._"
-          : "_Allocate this node in the skill tree to unlock it. Active skills are used in Dungeons._",
-      ].join("\n"),
-    );
-
-  const picker = new StringSelectMenuBuilder()
-    .setCustomId(buildId(user.id, "skills", "actives"))
-    .setPlaceholder("Choose an active skill…")
-    .addOptions(
+      `**${unlockedCount}/${actives.length} unlocked.** Allocate an active's node in the skill tree to unlock it — actives are used in Dungeons.`,
+    )
+    .addFields(
       actives.map((a) => ({
-        label: a.name,
-        description: allocated.has(a.id) ? "Unlocked" : "Locked",
-        value: a.id,
-        default: a.id === selected.id,
-        emoji: "⚡",
+        name: `${allocated.has(a.id) ? "✅" : "🔒"}  ${a.name}`,
+        value: a.detail ?? a.desc,
+        inline: false,
       })),
     );
 
@@ -181,8 +165,5 @@ export function renderActiveSkills(
       .setStyle(ButtonStyle.Secondary),
   );
 
-  return {
-    embeds: [embed],
-    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(picker), row],
-  };
+  return { embeds: [embed], components: [row] };
 }
