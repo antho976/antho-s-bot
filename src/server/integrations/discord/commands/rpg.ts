@@ -24,6 +24,15 @@ export const rpg: BotCommand = {
       return;
     }
 
+    // Lock the command to the configured hub channel (blank = allowed anywhere).
+    if (config.channelId && interaction.channelId !== config.channelId) {
+      await interaction.reply({
+        content: `Head to <#${config.channelId}> to start your adventure.`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await track(guildId, "rpg_command", {});
 
     const existing = await getPlayer(guildId, interaction.user.id);
