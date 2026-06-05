@@ -79,6 +79,7 @@ export function renderGather(
   const body: string[] = [];
   if (notice) body.push(`*${notice}*`, "");
   body.push(`Total **${levels.total}**`, levelLine, `🛠️ ${toolName(player.toolTier)}`, "", now);
+  body.push("", "🌾 **Farm XP** auto-sends you to the best multi-skill area you've unlocked — gathers every skill there at once.");
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
@@ -245,31 +246,72 @@ export function renderSkillAreas(user: User, skillId: string, levels: GatheringL
   return { embeds: [embed], components: rows };
 }
 
-/** The multitool ladder. */
+/** The multitool screen: what you have, what the next tier buys you, and the ladder at a glance. */
 export function renderGatherTools(
   user: User,
   player: RpgPlayer,
   total: number,
   notice?: string,
 ): RpgScreen {
-  const lines = GATHER_TOOLS.map((t) => {
-    const tag =
-      player.toolTier >= t.tier ? "✅ owned" : t.tier === player.toolTier + 1 ? "▶️ next" : `🔒 Lv ${t.reqLevel}`;
-    return `${tag}  **${t.name}**  (${t.cost.toLocaleString()}g)\n⚡ ×${t.speed} speed   📦 ×${t.efficiency} yield   ✨ ${Math.round(t.doubleChance * 100)}% double   ⏳ +${t.capBonusH}h`;
-  });
+  const tier = player.toolTier;
+  const cur = GATHER_TOOLS.find((t) => t.tier === tier) ?? { speed: 1, efficiency: 1, doubleChance: 0, capBonusH: 0 };
+  const next = GATHER_TOOLS.find((t) => t.tier === tier + 1);
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
     .setTitle("🛠️ Multitools")
     .setDescription(
-      [
-        notice ?? `Current: **${toolName(player.toolTier)}**   total level **${total}**   💰 ${player.gold.toLocaleString()}g`,
-        "",
-        ...lines,
-      ].join("\n"),
+      notice ??
+        "One multitool covers **every** gathering skill. Higher tiers gather faster, yield more, double drops more often, and let you idle longer.",
+    )
+    .addFields(
+      {
+        name: "Equipped",
+        value: `**${toolName(tier)}**\n⚡ ×${cur.speed} speed\n📦 ×${cur.efficiency} yield\n✨ ${pct(cur.doubleChance)} double\n⏳ +${cur.capBonusH}h idle`,
+        inline: true,
+      },
+      {
+        name: "Wallet",
+        value: `💰 **${player.gold.toLocaleString()}**g\n📊 Total level **${total}**`,
+        inline: true,
+      },
     );
 
-  const next = GATHER_TOOLS.find((t) => t.tier === player.toolTier + 1);
+  if (next) {
+    const arrow = (label: string, from: string, to: string) => `${label}  ${from} → **${to}**`;
+    const gate =
+      total < next.reqLevel
+        ? `🔒 Needs total level **${next.reqLevel}** — you're at ${total}.`
+        : player.gold < next.cost
+          ? `💰 Costs **${next.cost.toLocaleString()}**g — short ${(next.cost - player.gold).toLocaleString()}g.`
+          : "✅ Ready — press **Buy** below.";
+    embed.addFields({
+      name: `Next: ${next.name} · ${next.cost.toLocaleString()}g`,
+      value: [
+        arrow("⚡ Speed", `×${cur.speed}`, `×${next.speed}`),
+        arrow("📦 Yield", `×${cur.efficiency}`, `×${next.efficiency}`),
+        arrow("✨ Double", pct(cur.doubleChance), pct(next.doubleChance)),
+        arrow("⏳ Idle", `+${cur.capBonusH}h`, `+${next.capBonusH}h`),
+        "",
+        gate,
+      ].join("\n"),
+      inline: false,
+    });
+  } else {
+    embed.addFields({ name: "Fully upgraded", value: "You own the best multitool there is. 🏆", inline: false });
+  }
+
+  // The whole ladder at a glance — no per-tier stat dump, just status, level, and price.
+  embed.addFields({
+    name: "All tiers",
+    value: GATHER_TOOLS.map((t) => {
+      const icon = tier >= t.tier ? "✅" : t.tier === tier + 1 ? "▶️" : "🔒";
+      return `${icon} **${t.name}** — Lv ${t.reqLevel} · ${t.cost.toLocaleString()}g`;
+    }).join("\n"),
+    inline: false,
+  });
+
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
   if (next) {
     const canBuy = player.gold >= next.cost && total >= next.reqLevel;
