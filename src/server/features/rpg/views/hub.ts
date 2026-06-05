@@ -74,9 +74,9 @@ export function renderPlayer(player: RpgPlayer, user: User): RpgScreen {
       name: `${name} • Level ${player.level} • ${cls.name}`,
       iconURL: user.displayAvatarURL({ size: 128 }),
     })
-    .setDescription("Check your pack, spend skill points, or visit the Blacksmith.");
+    .setDescription("Your pack, skills, professions, and gear.");
 
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+  const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "inventory"))
       .setLabel("Inventory")
@@ -89,9 +89,22 @@ export function renderPlayer(player: RpgPlayer, user: User): RpgScreen {
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "smith"))
-      .setLabel("Blacksmith")
-      .setEmoji("🔨")
+      .setLabel("Professions")
+      .setEmoji("🛠️")
       .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "smith", "craft"))
+      .setLabel("Crafting")
+      .setEmoji("🔨")
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "smith", "weapons"))
+      .setLabel("Equipment")
+      .setEmoji("⚔️")
+      .setStyle(ButtonStyle.Primary),
+  );
+
+  const back = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "hub"))
       .setLabel("Back")
@@ -99,5 +112,5 @@ export function renderPlayer(player: RpgPlayer, user: User): RpgScreen {
       .setStyle(ButtonStyle.Secondary),
   );
 
-  return { embeds: [embed], components: [row] };
+  return { embeds: [embed], components: [nav, back] };
 }

@@ -43,35 +43,24 @@ export function renderCombat(
 ): RpgScreen {
   const ready = charges.charges > 0;
   const full = charges.charges >= charges.max;
-
-  const legend = DIFFICULTIES.map((d) => {
-    const locked = player.level < d.minLevel;
-    const icon = locked ? "🔒" : d.emoji;
-    const note = locked ? ` (unlocks at Lv ${d.minLevel})` : "";
-    return `${icon} **${d.label}**: ${d.hint}${note}`;
-  }).join("\n");
-
-  const chargeLine = `⚡ Charges: **${charges.charges}/${charges.max}**${
-    full ? " · full" : ` · +1 in **${formatRemaining(charges.nextInMs)}**`
-  }`;
+  const lockedTiers = DIFFICULTIES.filter((d) => player.level < d.minLevel);
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle("⚔️  Adventure")
+    .setTitle("⚔️ Adventure")
     .setDescription(
       [
-        notice ? `*${notice}*\n` : "",
-        "Spend a charge to fight for **XP**, **gold** and the occasional **key**. A lone foe is settled",
-        "instantly; tougher difficulties can throw a **pack** you fight turn-by-turn.",
+        notice ? `*${notice}*` : "",
+        `⚡ **${charges.charges}/${charges.max} charges**${full ? " · full" : ` · next in ${formatRemaining(charges.nextInMs)}`}`,
         "",
-        legend,
-        "",
-        chargeLine,
-        ready ? "🟢 Pick a difficulty to set out." : "🟠 Out of charges — rest up.",
+        "Spend a charge to fight for **XP**, **gold** and rare **keys**. One foe is settled instantly; harder tiers can spawn a **pack** you fight turn-by-turn.",
+        ready ? "" : "🟠 Out of charges — rest up.",
+        lockedTiers.length ? `🔒 ${lockedTiers.map((d) => `${d.label} (Lv ${d.minLevel})`).join(" · ")}` : "",
       ]
-        .filter((l) => l !== "")
+        .filter(Boolean)
         .join("\n"),
-    );
+    )
+    .setFooter({ text: "Easy → Brutal: more risk, more loot, more packs." });
 
   const diffRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     ...DIFFICULTIES.map((d) => {
@@ -86,10 +75,16 @@ export function renderCombat(
     }),
   );
 
-  return {
-    embeds: [embed],
-    components: [diffRow, new ActionRowBuilder<ButtonBuilder>().addComponents(backButton(user.id, "Back"))],
-  };
+  const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "dungeon"))
+      .setLabel("Dungeons")
+      .setEmoji("💀")
+      .setStyle(ButtonStyle.Danger),
+    backButton(user.id, "Back"),
+  );
+
+  return { embeds: [embed], components: [diffRow, nav] };
 }
 
 /** The live turn-based fight screen for a multi-mob pack. Attack the front foe, or flee. */

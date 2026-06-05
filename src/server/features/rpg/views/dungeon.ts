@@ -24,9 +24,9 @@ import type { RpgPlayer } from "../queries";
 import { RESOURCES } from "../gather-config";
 import type { RpgScreen } from "./types";
 
-function backToHub(ownerId: string, label = "Back"): ButtonBuilder {
+function backToCombat(ownerId: string, label = "Back"): ButtonBuilder {
   return new ButtonBuilder()
-    .setCustomId(buildId(ownerId, "hub"))
+    .setCustomId(buildId(ownerId, "combat"))
     .setLabel(label)
     .setEmoji("◀️")
     .setStyle(ButtonStyle.Secondary);
@@ -88,7 +88,7 @@ export function renderDungeonList(
       ),
     );
   }
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(backToHub(user.id)));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(backToCombat(user.id)));
   return { embeds: [embed], components: rows };
 }
 
@@ -100,7 +100,7 @@ export function renderDungeonCombat(user: User, run: RunState, classId: string):
   if (!dungeon || !enemy) {
     return {
       embeds: [new EmbedBuilder().setColor(RPG.embedColor).setTitle("💀 Dungeon").setDescription("This run has ended.")],
-      components: [new ActionRowBuilder<ButtonBuilder>().addComponents(backToHub(user.id, "Back to Hub"))],
+      components: [new ActionRowBuilder<ButtonBuilder>().addComponents(backToCombat(user.id, "Back to Combat"))],
     };
   }
 
@@ -217,7 +217,7 @@ export function renderDungeonResult(user: User, summary: DungeonSummary, dungeon
       .setLabel("Dungeons")
       .setEmoji("💀")
       .setStyle(ButtonStyle.Primary),
-    backToHub(user.id, "Hub"),
+    backToCombat(user.id, "Combat"),
   );
   return { embeds: [embed], components: [row] };
 }

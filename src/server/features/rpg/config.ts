@@ -143,9 +143,8 @@ export const INTRO_LORE = [
  */
 export const HUB_CATEGORIES = [
   { view: "combat", label: "Combat", emoji: "⚔️", style: "danger" },
-  { view: "dungeon", label: "Dungeons", emoji: "💀", style: "danger" },
   { view: "player", label: "Player", emoji: "👤", style: "success" },
-  { view: "gather", label: "Gather", emoji: "⛏️", style: "primary" }, 
+  { view: "gather", label: "Gather", emoji: "⛏️", style: "primary" },
   { view: "guild", label: "Guild", emoji: "🏰", style: "success" },
   { view: "quests", label: "Quests", emoji: "📜", style: "primary" },
   { view: "options", label: "Options", emoji: "⚙️", style: "secondary" },

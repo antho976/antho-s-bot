@@ -31,7 +31,8 @@ function back(ownerId: string, view: string, action: string | undefined, label =
     .setStyle(ButtonStyle.Secondary);
 }
 
-/** Blacksmith home: profession level, your equipped weapon, and the way into crafting + gear. */
+/** Professions overview: your profession levels + the bonuses they grant. Crafting and Equipment are
+ *  their own dedicated buttons (in the Player menu), so this screen is just the overview. */
 export function renderBlacksmith(
   user: User,
   player: RpgPlayer,
@@ -40,33 +41,22 @@ export function renderBlacksmith(
 ): RpgScreen {
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle("🔨 Blacksmith")
+    .setTitle("🛠️ Professions")
     .setDescription(
       [
-        `Blacksmithing level **${level}**`,
+        `🔨 **Blacksmithing** — Level **${level}**`,
         equipped
-          ? `Equipped: ${equipped.emoji} **${equipped.name}** +${equipped.upgrade} (${equipped.damage} dmg)`
-          : "Equipped: nothing",
+          ? `⚔️ Equipped: ${equipped.emoji} **${equipped.name}** +${equipped.upgrade} — **+${equipped.damage} dmg** in combat`
+          : "⚔️ Equipped: nothing",
         "",
-        "Forge warrior weapons from gathered ore + wood, then enhance them. Your equipped weapon's damage is added to every hit in combat.",
+        "**Bonuses**",
+        "• Your equipped weapon's damage is added to every hit in combat.",
+        "",
+        "Forge gear under **Crafting**; equip & enhance it under **Equipment**.",
       ].join("\n"),
     );
 
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(buildId(user.id, "smith", "craft"))
-      .setLabel("Forge")
-      .setEmoji("🔨")
-      .setStyle(ButtonStyle.Success),
-    new ButtonBuilder()
-      .setCustomId(buildId(user.id, "smith", "weapons"))
-      .setLabel("Weapons")
-      .setEmoji("⚔️")
-      .setStyle(ButtonStyle.Primary),
-    back(user.id, "player", undefined),
-  );
-
-  return { embeds: [embed], components: [row] };
+  return { embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "player", undefined))] };
 }
 
 /** Crafting menu: warrior weapon recipes with cost + a forge select for the ones you can make. */
@@ -90,7 +80,7 @@ export function renderCraft(
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle("🔨 Forge a weapon")
+    .setTitle("🔨 Crafting")
     .setDescription(desc.join("\n"));
 
   const forgeable = WEAPON_RECIPES.filter(
@@ -113,19 +103,19 @@ export function renderCraft(
       ),
     );
   }
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "smith", undefined)));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "player", undefined)));
 
   return { embeds: [embed], components: rows };
 }
 
-/** Your forged weapons; pick one to enhance or equip. */
+/** Your gear; pick a weapon to enhance or equip. */
 export function renderWeapons(user: User, weapons: Weapon[], notice?: string): RpgScreen {
-  const embed = new EmbedBuilder().setColor(RPG.embedColor).setTitle("⚔️ Your weapons");
+  const embed = new EmbedBuilder().setColor(RPG.embedColor).setTitle("⚔️ Equipment");
   if (weapons.length === 0) {
-    embed.setDescription(notice ?? "No weapons yet — forge one from the Blacksmith.");
+    embed.setDescription(notice ?? "No gear yet — forge a weapon under Crafting.");
     return {
       embeds: [embed],
-      components: [new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "smith", undefined))],
+      components: [new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "player", undefined))],
     };
   }
 
@@ -154,7 +144,7 @@ export function renderWeapons(user: User, weapons: Weapon[], notice?: string): R
     embeds: [embed],
     components: [
       new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select),
-      new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "smith", "weapons", "Refresh"), back(user.id, "smith", undefined)),
+      new ActionRowBuilder<ButtonBuilder>().addComponents(back(user.id, "smith", "weapons", "Refresh"), back(user.id, "player", undefined)),
     ],
   };
 }
