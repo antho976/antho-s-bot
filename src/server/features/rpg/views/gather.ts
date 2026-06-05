@@ -204,7 +204,7 @@ export function renderSkillAreas(user: User, skillId: string, levels: GatheringL
       return primary ? `${head}${odds}` : `　 └ ${head}${odds}`;
     });
     const lock = levels.total < a.reqLevel ? "🔒 " : "";
-    return `${lock}**${a.name}** (Lv ${a.reqLevel})\n${rows.join("\n")}`;
+    return `### ${lock}${a.name} (Lv ${a.reqLevel})\n${rows.join("\n")}`;
   };
 
   const intro = "Pick an area to gather. You'll harvest every skill it offers, not just this one.";
