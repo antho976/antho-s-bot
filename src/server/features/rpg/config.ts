@@ -135,8 +135,8 @@ export const INTRO_LORE = [
  */
 export const HUB_CATEGORIES = [
   { view: "combat", label: "Combat", emoji: "⚔️", style: "danger" },
-  { view: "gather", label: "Gather", emoji: "⛏️", style: "success" },
-  { view: "player", label: "Player", emoji: "👤", style: "primary" },
+  { view: "player", label: "Player", emoji: "👤", style: "success" },
+  { view: "gather", label: "Gather", emoji: "⛏️", style: "primary" }, 
   { view: "guild", label: "Guild", emoji: "🏰", style: "success" },
   { view: "quests", label: "Quests", emoji: "📜", style: "primary" },
   { view: "options", label: "Options", emoji: "⚙️", style: "secondary" },
