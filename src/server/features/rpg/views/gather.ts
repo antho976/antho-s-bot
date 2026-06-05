@@ -66,7 +66,7 @@ export function renderGather(
     const good = areaSkills(a)
       .map((s) => `${GATHER_SKILL_MAP[s].emoji} ${areaAbundance(a.id, s)} ${GATHER_SKILL_MAP[s].noun}`)
       .join(", ");
-    return `${locked ? "🔒 " : ""}**${a.name}** (Lv ${a.reqLevel})  ${good}`;
+    return `${locked ? "🔒 " : ""}**${a.name}** (Lv ${a.reqLevel})\n${good}`;
   }).join("\n");
 
   const embed = new EmbedBuilder()
@@ -74,7 +74,7 @@ export function renderGather(
     .setTitle("⛏️ Gathering")
     .setDescription(notice ?? "Progress builds in real time, even while you're offline. Reopen to refresh, then Collect.")
     .addFields(
-      { name: "Skills", value: `${levelLine}\nTotal **${levels.total}**   🛠️ ${toolName(player.toolTier)}`, inline: false },
+      { name: "Skills", value: `Total **${levels.total}**\n${levelLine}\n🛠️ ${toolName(player.toolTier)}`, inline: false },
       { name: "Now", value: now, inline: false },
       { name: "Areas", value: areaList, inline: false },
     );
