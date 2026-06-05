@@ -73,13 +73,24 @@ export function renderGather(
   const shownAreas = GATHER_AREAS.filter((a) => keep.has(a.reqLevel));
   const hidden = GATHER_AREAS.length - shownAreas.length;
 
-  const areaBlocks = shownAreas.map((a) => {
-    const locked = levels.total < a.reqLevel;
-    const good = areaSkills(a)
-      .map((s) => `${GATHER_SKILL_MAP[s].emoji} ${areaAbundance(a.id, s)} ${GATHER_SKILL_MAP[s].noun}`)
-      .join(", ");
-    return `### ${locked ? "🔒 " : ""}${a.name} (Lv ${a.reqLevel})\n${good}`;
-  }).join("\n");
+  // Group the shown areas under a level header (`## Level N`), with each area's name as a `###`
+  // sub-header and its abundances beneath. Locked groups (the next tier) get a 🔒 on the header.
+  const shownTiers = [...new Set(shownAreas.map((a) => a.reqLevel))].sort((x, y) => x - y);
+  const areaBlocks = shownTiers
+    .map((tier) => {
+      const header = `## ${levels.total < tier ? "🔒 " : ""}Level ${tier}`;
+      const areas = shownAreas
+        .filter((a) => a.reqLevel === tier)
+        .map((a) => {
+          const good = areaSkills(a)
+            .map((s) => `${GATHER_SKILL_MAP[s].emoji} ${areaAbundance(a.id, s)} ${GATHER_SKILL_MAP[s].noun}`)
+            .join(", ");
+          return `### ${a.name}\n${good}`;
+        })
+        .join("\n");
+      return `${header}\n${areas}`;
+    })
+    .join("\n");
 
   const body: string[] = [];
   if (notice) body.push(`*${notice}*`, "");
