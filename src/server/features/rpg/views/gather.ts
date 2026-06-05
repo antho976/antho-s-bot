@@ -22,6 +22,7 @@ import {
 } from "../gather-config";
 import type { GatherPreview, GatheringLevels } from "../gather";
 import type { RpgPlayer } from "../queries";
+import { renderGatherTalentsImage } from "./gather-talent-canvas";
 import type { RpgScreen } from "./types";
 
 function back(ownerId: string, view: string, label = "Back"): ButtonBuilder {
@@ -204,14 +205,20 @@ export function renderGatherTalents(
   const spent = Object.values(ranks).reduce((a, b) => a + b, 0);
   const points = Math.max(0, level - spent);
 
-  const lines = GATHER_TALENTS.map(
-    (t) => `**${t.name}** — ${ranks[t.id] ?? 0}/${t.maxRank}  _(${t.unit} per rank)_`,
-  );
+  // The talents themselves (names, effects, rank pips) are drawn on the themed scene image; the
+  // embed text just carries the notice / how-to so the picture isn't duplicated below it.
+  const image = renderGatherTalentsImage(skillId, ranks, level, points);
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
     .setTitle(`${sk?.name ?? "Skill"} — Talents`)
-    .setDescription([notice ?? `Level **${level}** · **${points}** point${points === 1 ? "" : "s"} free`, "", ...lines].join("\n"));
+    .setDescription(
+      notice ??
+        (points > 0
+          ? "Spend a point below to upgrade a talent."
+          : "Level up this skill to earn more talent points."),
+    )
+    .setImage("attachment://gather-talents.png");
 
   const rows: (
     | ActionRowBuilder<ButtonBuilder>
@@ -257,5 +264,5 @@ export function renderGatherTalents(
     ),
   );
 
-  return { embeds: [embed], components: rows };
+  return { embeds: [embed], components: rows, files: [image] };
 }
