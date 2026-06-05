@@ -78,14 +78,14 @@ export function renderGather(
   const shownTiers = [...new Set(shownAreas.map((a) => a.reqLevel))].sort((x, y) => x - y);
   const areaBlocks = shownTiers
     .map((tier) => {
-      const header = `## ${levels.total < tier ? "🔒 " : ""}Level ${tier}`;
+      const header = `### ${levels.total < tier ? "🔒 " : ""}Level ${tier}`;
       const areas = shownAreas
         .filter((a) => a.reqLevel === tier)
         .map((a) => {
           const good = areaSkills(a)
             .map((s) => `${GATHER_SKILL_MAP[s].emoji} ${areaAbundance(a.id, s)} ${GATHER_SKILL_MAP[s].noun}`)
             .join(", ");
-          return `### ${a.name}\n${good}`;
+          return `**${a.name}**\n${good}`;
         })
         .join("\n");
       return `${header}\n${areas}`;
