@@ -1,5 +1,6 @@
 // Gathering orchestration — composes the pure math (domain/gather) with config + persistence.
-// One active idle session per player; drops are banked lazily on collect (no timers).
+// One active idle session per player; drops are banked lazily on collect (no timers, survives
+// the bot being offline — elapsed is computed from a stored timestamp).
 import {
   GATHER,
   GATHER_AREA_MAP,
@@ -7,21 +8,16 @@ import {
   GATHER_TALENTS,
   GATHER_TALENT_MAP,
   GATHER_TOOLS,
-  RESOURCES,
-  areaResource,
-  ratingMult,
+  areaDropTable,
   toolAt,
-  type GatherSkillId,
 } from "./gather-config";
 import { computeHarvest, gatherLevel, type Rates } from "./domain/gather";
 import {
   addGatherXp,
   addItem,
   allocGatherTalent,
-  deleteInventoryRows,
   getGatherTalents,
   getGatheringXp,
-  listInventory,
   resetGatherTalents,
   updatePlayer,
   type RpgPlayer,
@@ -80,48 +76,44 @@ export type GatherPreview = {
   active: boolean;
   skillId?: string;
   areaId?: string;
-  resourceId?: string;
-  units?: number;
+  drops?: { resourceId: string; units: number }[];
+  totalUnits?: number;
   xp?: number;
   wasCapped?: boolean;
-  rates?: Rates;
 };
 
 /** Compute (without persisting) what the current session has banked so far. */
 export async function previewGather(player: RpgPlayer): Promise<GatherPreview> {
   const { gatherSkillId, gatherAreaId, gatherStartedAt } = player;
   if (!gatherSkillId || !gatherAreaId || !gatherStartedAt) return { active: false };
-  const area = GATHER_AREA_MAP[gatherAreaId];
-  const rating = area?.yields[gatherSkillId as GatherSkillId];
-  const resourceId = areaResource(gatherAreaId, gatherSkillId);
-  if (!area || !rating || !resourceId) return { active: false };
+  const table = areaDropTable(gatherAreaId, gatherSkillId);
+  if (table.length === 0) return { active: false };
 
   const ranks = await talentRanksFor(player.id, gatherSkillId);
   const rates = ratesFor(player.toolTier, ranks);
   const elapsed = Date.now() - gatherStartedAt.getTime();
-  const h = computeHarvest(elapsed, ratingMult(rating), RESOURCES[resourceId].xp, rates);
+  const h = computeHarvest(elapsed, table, rates);
   return {
     active: true,
     skillId: gatherSkillId,
-    areaId: area.id,
-    resourceId,
-    units: h.units,
+    areaId: gatherAreaId,
+    drops: h.drops,
+    totalUnits: h.totalUnits,
     xp: h.xpGained,
     wasCapped: h.wasCapped,
-    rates,
   };
 }
 
-export type CollectResult = { units: number; xp: number; resourceId: string } | null;
+export type CollectResult = { totalUnits: number; xp: number } | null;
 
 /** Bank the current session's drops + xp and reset the clock (keeps gathering). */
 export async function collectGather(player: RpgPlayer): Promise<CollectResult> {
   const p = await previewGather(player);
-  if (!p.active || !p.resourceId || !p.skillId) return null;
-  if (p.units && p.units > 0) await addItem(player.id, p.resourceId, p.units);
+  if (!p.active || !p.skillId) return null;
+  for (const d of p.drops ?? []) await addItem(player.id, d.resourceId, d.units);
   if (p.xp && p.xp > 0) await addGatherXp(player.id, p.skillId, p.xp);
   await updatePlayer(player.id, { gatherStartedAt: new Date() });
-  return { units: p.units ?? 0, xp: p.xp ?? 0, resourceId: p.resourceId };
+  return { totalUnits: p.totalUnits ?? 0, xp: p.xp ?? 0 };
 }
 
 export type StartResult = { ok: boolean; reason?: string };
@@ -133,8 +125,8 @@ export async function startGather(
   areaId: string,
 ): Promise<StartResult> {
   const area = GATHER_AREA_MAP[areaId];
-  if (!area || !area.yields[skillId as GatherSkillId]) {
-    return { ok: false, reason: "That spot doesn't offer that skill." };
+  if (!area || areaDropTable(areaId, skillId).length === 0) {
+    return { ok: false, reason: "That area doesn't offer that skill." };
   }
   const { total } = await gatheringLevels(player.id);
   if (total < area.reqLevel) {
@@ -158,27 +150,6 @@ export async function stopGather(player: RpgPlayer): Promise<CollectResult> {
     gatherStartedAt: null,
   });
   return r;
-}
-
-export type SellResult = { gold: number; count: number };
-
-/** Sell every resource in the inventory for gold (keeps non-resource items like keys). */
-export async function sellResources(player: RpgPlayer): Promise<SellResult> {
-  const inv = await listInventory(player.id);
-  let gold = 0;
-  let count = 0;
-  const ids: number[] = [];
-  for (const row of inv) {
-    const res = RESOURCES[row.itemId];
-    if (!res || row.instanceStatsJson) continue; // only plain resource stacks
-    gold += res.value * row.qty;
-    count += row.qty;
-    ids.push(row.id);
-  }
-  if (ids.length === 0) return { gold: 0, count: 0 };
-  await deleteInventoryRows(ids);
-  await updatePlayer(player.id, { gold: player.gold + gold });
-  return { gold, count };
 }
 
 export type BuyToolResult = { ok: boolean; reason?: string };

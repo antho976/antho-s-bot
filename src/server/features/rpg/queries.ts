@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
   rpgConfig,
@@ -102,19 +102,6 @@ export async function addItem(playerId: number, itemId: string, qty: number): Pr
 }
 
 // --- Gathering -------------------------------------------------------------------------------
-
-export type RpgInventoryRow = typeof rpgInventory.$inferSelect;
-
-/** All inventory rows for a player (resources + items). */
-export function listInventory(playerId: number): Promise<RpgInventoryRow[]> {
-  return db.select().from(rpgInventory).where(eq(rpgInventory.playerId, playerId));
-}
-
-/** Delete specific inventory rows (used when selling resources). */
-export async function deleteInventoryRows(ids: number[]): Promise<void> {
-  if (ids.length === 0) return;
-  await db.delete(rpgInventory).where(inArray(rpgInventory.id, ids));
-}
 
 /** Per-skill cumulative gathering xp as a map (missing skill = 0). */
 export async function getGatheringXp(playerId: number): Promise<Record<string, number>> {

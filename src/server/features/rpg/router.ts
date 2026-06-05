@@ -21,16 +21,15 @@ import {
   gatheringLevels,
   previewGather,
   respecGatherTalents,
-  sellResources,
   startGather,
   stopGather,
   talentRanksFor,
 } from "./gather";
 import { gatherLevel } from "./domain/gather";
-import { GATHER_SKILLS, RESOURCES } from "./gather-config";
+import { GATHER_SKILLS } from "./gather-config";
 import {
+  renderArea,
   renderGather,
-  renderGatherAreas,
   renderGatherTalents,
   renderGatherTools,
 } from "./views/gather";
@@ -162,9 +161,8 @@ async function handleGather(
   const action = route.action;
 
   // Non-mutating sub-screens.
-  if (action === "pick" && interaction.isStringSelectMenu()) {
-    const levels = await gatheringLevels(player.id);
-    return { kind: "update", screen: renderGatherAreas(user, interaction.values[0], levels) };
+  if (action === "area" && interaction.isStringSelectMenu()) {
+    return { kind: "update", screen: renderArea(user, interaction.values[0]) };
   }
   if (action === "tools") {
     const { total } = await gatheringLevels(player.id);
@@ -208,20 +206,14 @@ async function handleGather(
   } else if (action === "collect") {
     const r = await collectGather(player);
     notice =
-      r && (r.units || r.xp)
-        ? `Collected ${r.units.toLocaleString()}× ${RESOURCES[r.resourceId]?.name ?? "drops"} (+${r.xp.toLocaleString()} xp).`
+      r && (r.totalUnits || r.xp)
+        ? `Collected ${r.totalUnits.toLocaleString()} drops (+${r.xp.toLocaleString()} xp).`
         : "Nothing banked yet.";
   } else if (action === "stop") {
     const r = await stopGather(player);
     notice = r
-      ? `Stopped — banked ${r.units.toLocaleString()} drops (+${r.xp.toLocaleString()} xp).`
+      ? `Stopped — banked ${r.totalUnits.toLocaleString()} drops (+${r.xp.toLocaleString()} xp).`
       : "Stopped gathering.";
-  } else if (action === "sell") {
-    const r = await sellResources(player);
-    notice =
-      r.count > 0
-        ? `Sold ${r.count.toLocaleString()} resources for 💰 ${r.gold.toLocaleString()} gold.`
-        : "No resources to sell.";
   }
 
   const p2 = (await getPlayer(guildId, user.id)) ?? player;

@@ -28,29 +28,40 @@ export function gatherLevel(totalXp: number): number {
 /** Effective harvest rates after tool + per-skill talents are folded in. */
 export type Rates = { speed: number; efficiency: number; doubleChance: number; capMs: number };
 
+/** One weighted entry in an area's drop table for a skill. */
+export type DropEntry = { resourceId: string; weight: number; xp: number };
+
 export type Harvest = {
   hits: number;
-  units: number; // resources gained (efficiency × rating × double, expected-value)
+  drops: { resourceId: string; units: number }[];
+  totalUnits: number;
   xpGained: number;
   usedMs: number; // elapsed actually counted (after the cap)
   wasCapped: boolean;
 };
 
 /**
- * Idle harvest over `elapsedMs` for one skill in one area. Expected-value smoothed (no per-action
- * RNG) so an idle session is deterministic and the preview matches what you collect.
+ * Idle harvest over `elapsedMs` for one skill in one area, spread across the area's weighted drop
+ * table. Expected-value smoothed (no per-action RNG) so an idle session is deterministic and the
+ * preview matches what you collect. Crucially this is pure time math — it counts real elapsed time
+ * whether or not the bot was online for it.
  */
-export function computeHarvest(
-  elapsedMs: number,
-  ratingMult: number,
-  resourceXp: number,
-  rates: Rates,
-): Harvest {
+export function computeHarvest(elapsedMs: number, table: DropEntry[], rates: Rates): Harvest {
   const used = Math.min(Math.max(0, elapsedMs), rates.capMs);
   const actionMs = GATHER.baseActionMs / Math.max(0.1, rates.speed);
   const hits = Math.floor(used / actionMs);
-  const perHit = rates.efficiency * ratingMult * (1 + rates.doubleChance);
-  const units = Math.floor(hits * perHit);
-  const xpGained = Math.round(hits * resourceXp * ratingMult);
-  return { hits, units, xpGained, usedMs: used, wasCapped: elapsedMs > rates.capMs };
+  const sumW = table.reduce((a, t) => a + t.weight, 0) || 1;
+
+  const totalPerHit = rates.efficiency * (1 + rates.doubleChance);
+  const totalUnitsRaw = hits * totalPerHit;
+
+  const drops = table
+    .map((t) => ({ resourceId: t.resourceId, units: Math.floor((totalUnitsRaw * t.weight) / sumW) }))
+    .filter((d) => d.units > 0);
+
+  const xpPerHit = table.reduce((a, t) => a + (t.weight / sumW) * t.xp, 0);
+  const xpGained = Math.round(hits * xpPerHit);
+  const totalUnits = drops.reduce((a, d) => a + d.units, 0);
+
+  return { hits, drops, totalUnits, xpGained, usedMs: used, wasCapped: elapsedMs > rates.capMs };
 }
