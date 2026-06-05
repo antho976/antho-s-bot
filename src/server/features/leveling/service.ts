@@ -3,6 +3,7 @@ import { track } from "@/server/core/analytics";
 import { getClient } from "@/server/integrations/discord/client";
 import { sendToChannel } from "@/server/integrations/discord/send";
 import { levelFromXp, type CurveConfig } from "./domain/curve";
+import { renderLevelUp } from "./domain/format";
 import {
   getConfig,
   getOrCreateLevel,
@@ -71,17 +72,28 @@ async function onLevelUp(ctx: XpContext, config: LevelConfig, level: number): Pr
   if (client) {
     try {
       const guild = await client.guilds.fetch(ctx.guildId);
-      const reward = (await listRewards(ctx.guildId)).find((r) => r.level === level);
-      if (reward) {
-        const member = await guild.members.fetch(ctx.userId);
+      const member = await guild.members.fetch(ctx.userId).catch(() => null);
+      const rewards = await listRewards(ctx.guildId);
+      const reward = rewards.find((r) => r.level === level);
+      if (reward && member) {
         await member.roles.add(reward.roleId).catch(() => {});
+        // When not stacking, strip any lower reward roles so only the newest remains.
+        if (!config.stackRoleRewards) {
+          for (const other of rewards) {
+            if (other.roleId !== reward.roleId && member.roles.cache.has(other.roleId)) {
+              await member.roles.remove(other.roleId).catch(() => {});
+            }
+          }
+        }
       }
-      if (config.announce) {
+      if (config.announce && level >= config.announceMinLevel) {
         const channelId = config.announceChannelId || ctx.channelId;
         if (channelId) {
+          const ping = config.announcePing;
+          const userToken = ping ? `<@${ctx.userId}>` : (member?.displayName ?? "Someone");
           await sendToChannel(channelId, {
-            content: `🎉 <@${ctx.userId}> reached **level ${level}**!`,
-            allowedMentions: { users: [ctx.userId] },
+            content: renderLevelUp(config.levelUpMessage, userToken, level),
+            allowedMentions: ping ? { users: [ctx.userId] } : { parse: [] },
           });
         }
       }

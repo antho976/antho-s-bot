@@ -33,7 +33,7 @@ export function RoleLevelSync() {
   }
 
   return (
-    <section className="mt-10">
+    <section>
       <h2 className="text-lg font-semibold text-text">Sync levels from roles</h2>
       <p className="mt-1 text-sm text-muted">
         Scans every member and sets their level from any role named like{" "}

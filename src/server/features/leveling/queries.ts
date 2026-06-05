@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt } from "drizzle-orm";
+import { and, count, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/server/db";
 import { levelConfig, levelCurve, levelRewards, levels } from "@/server/db/schema";
 
@@ -76,9 +76,36 @@ export function defaultConfig(guildId: string): LevelConfig {
     curveFactor: 1.2,
     announce: true,
     announceChannelId: null,
+    announcePing: true,
+    announceMinLevel: 0,
+    levelUpMessage: null,
+    stackRoleRewards: true,
     voiceRequireActive: true,
     updatedAt: null,
   };
+}
+
+export interface LevelingStats {
+  members: number;
+  totalXp: number;
+  totalMessages: number;
+  totalVoice: number;
+  topLevel: number;
+}
+
+/** Guild-wide totals for the leaderboard "at a glance" panel. */
+export async function levelingStats(guildId: string): Promise<LevelingStats> {
+  const rows = await db
+    .select({
+      members: count(),
+      totalXp: sql<number>`coalesce(sum(${levels.xp}), 0)`,
+      totalMessages: sql<number>`coalesce(sum(${levels.messages}), 0)`,
+      totalVoice: sql<number>`coalesce(sum(${levels.voiceMinutes}), 0)`,
+      topLevel: sql<number>`coalesce(max(${levels.level}), 0)`,
+    })
+    .from(levels)
+    .where(eq(levels.guildId, guildId));
+  return rows[0] ?? { members: 0, totalXp: 0, totalMessages: 0, totalVoice: 0, topLevel: 0 };
 }
 
 export async function getConfig(guildId: string): Promise<LevelConfig> {

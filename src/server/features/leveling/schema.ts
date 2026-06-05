@@ -45,6 +45,16 @@ export const levelConfig = sqliteTable("level_config", {
   curveFactor: real("curve_factor").notNull().default(1.2),
   announce: integer("announce", { mode: "boolean" }).notNull().default(true),
   announceChannelId: text("announce_channel_id"),
+  /** Mention (ping) the member in the level-up announcement. */
+  announcePing: integer("announce_ping", { mode: "boolean" }).notNull().default(true),
+  /** Only announce level-ups at or above this level (0 = announce all). */
+  announceMinLevel: integer("announce_min_level").notNull().default(0),
+  /** Custom level-up message; supports {user} and {level}. Blank = default. */
+  levelUpMessage: text("level_up_message"),
+  /** Keep previously earned reward roles (false = swap to only the newest). */
+  stackRoleRewards: integer("stack_role_rewards", { mode: "boolean" })
+    .notNull()
+    .default(true),
   voiceRequireActive: integer("voice_require_active", { mode: "boolean" })
     .notNull()
     .default(true),

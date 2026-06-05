@@ -44,7 +44,7 @@ export function RewardsManager({ initial }: { initial: LevelReward[] }) {
   }
 
   return (
-    <section className="mt-10">
+    <section>
       <h2 className="text-lg font-semibold text-text">Role rewards</h2>
       <p className="mt-1 text-sm text-muted">Grant a role when a member reaches a level.</p>
 
