@@ -171,6 +171,7 @@ export async function buyTool(player: RpgPlayer, tier: number): Promise<BuyToolR
     return { ok: false, reason: `Needs total gathering level ${tool.reqLevel}.` };
   }
   if (player.gold < tool.cost) return { ok: false, reason: `Needs ${tool.cost.toLocaleString()} gold.` };
+  await collectGather(player); // bank pending drops at the old tool's rate before upgrading
   await updatePlayer(player.id, { toolTier: tier, gold: player.gold - tool.cost });
   return { ok: true };
 }
@@ -191,6 +192,7 @@ export async function allocGatherTalentPoint(
   const spent = Object.values(ranks).reduce((a, b) => a + b, 0);
   if (spent >= level) return { ok: false, reason: "No talent points free — level the skill up." };
   if ((ranks[nodeId] ?? 0) >= talent.maxRank) return { ok: false, reason: "That talent is maxed." };
+  await collectGather(player); // bank pending drops at the old rates, so the new rank only counts going forward
   await allocGatherTalent(player.id, skillId, nodeId);
   return { ok: true };
 }
@@ -201,5 +203,6 @@ export async function resetGatherTalent(
   skillId: string,
   nodeId: string,
 ): Promise<void> {
+  await collectGather(player); // bank pending drops (still with this talent) before it's removed
   await resetGatherTalentNode(player.id, skillId, nodeId);
 }
