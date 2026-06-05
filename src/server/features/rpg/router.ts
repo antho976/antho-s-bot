@@ -39,7 +39,7 @@ import { renderHub } from "./views/hub";
 import { renderIntro, renderClassSelect } from "./views/onboarding";
 import { renderDeleteConfirm, renderOptions } from "./views/options";
 import { renderPlaceholder } from "./views/scaffold";
-import { renderSkills, renderSkillGuide } from "./views/skills";
+import { renderSkills, renderActiveSkills } from "./views/skills";
 import type { RpgScreen } from "./views/types";
 
 type RpgComponent = ButtonInteraction | StringSelectMenuInteraction;
@@ -112,9 +112,10 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
       return { kind: "update", screen: renderCombat(fresh, interaction.user, Date.now()) };
     }
     case "skills": {
-      if (route.action === "guide") {
+      if (route.action === "actives") {
         const nodeIds = await getAllocatedNodeIds(fresh.id);
-        return { kind: "update", screen: renderSkillGuide(fresh, interaction.user, nodeIds) };
+        const selected = interaction.isStringSelectMenu() ? interaction.values[0] : undefined;
+        return { kind: "update", screen: renderActiveSkills(fresh, interaction.user, nodeIds, selected) };
       }
       if (route.action === "alloc" && interaction.isStringSelectMenu()) {
         await allocateSkill(fresh, interaction.values[0]);

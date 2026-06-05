@@ -20,6 +20,7 @@ export type SkillNode = {
   y: number;
   effect?: SkillEffect; // passives
   ability?: string; // actives (dormant until Dungeons)
+  detail?: string; // actives: full description for the Active Skills viewer
 };
 
 export type SkillTree = {
@@ -41,17 +42,17 @@ const WARRIOR_TREE: SkillTree = {
     { id: "o1", type: "notable", name: "Might", desc: "+12 Damage", x: 487, y: 265, effect: { damage: 12 } },
     { id: "o2", type: "notable", name: "Warlord", desc: "+6% Crit", x: 575, y: 210, effect: { critChance: 0.06 } },
     { id: "o3", type: "notable", name: "Executioner", desc: "+60% Crit Dmg", x: 662, y: 155, effect: { critMult: 0.6 } },
-    { id: "o4", type: "active", name: "Berserk", desc: "Active", x: 750, y: 100, ability: "berserk" },
+    { id: "o4", type: "active", name: "Berserk", desc: "Active", x: 750, y: 100, ability: "berserk", detail: "Fly into a rage — your hits land much harder for a few turns, but you take more damage while it lasts." },
 
     // Defense — passives then an active at the end
     { id: "d1", type: "notable", name: "Toughness", desc: "+8% Defence", x: 297, y: 253, effect: { dmgReduction: 0.08 } },
     { id: "d2", type: "notable", name: "Footwork", desc: "+8% Dodge", x: 193, y: 186, effect: { dodge: 0.08 } },
-    { id: "d3", type: "active", name: "Shield Wall", desc: "Active", x: 90, y: 120, ability: "shield_wall" },
+    { id: "d3", type: "active", name: "Shield Wall", desc: "Active", x: 90, y: 120, ability: "shield_wall", detail: "Brace behind your shield — heavily reduce the damage you take for a few turns." },
 
     // Sustain — passives then an active at the end
     { id: "s1", type: "notable", name: "Bloodthirst", desc: "+8% Lifesteal", x: 400, y: 430, effect: { lifesteal: 0.08 } },
     { id: "s2", type: "notable", name: "Brawn", desc: "+10 Damage", x: 315, y: 505, effect: { damage: 10 } },
-    { id: "s3", type: "active", name: "Rampage", desc: "Active", x: 485, y: 505, ability: "rampage" },
+    { id: "s3", type: "active", name: "Rampage", desc: "Active", x: 485, y: 505, ability: "rampage", detail: "Build fury with every blow — landing hits ramps your damage higher the longer you keep attacking." },
   ],
   edges: [
     ["root", "o1"], ["o1", "o2"], ["o2", "o3"], ["o3", "o4"],

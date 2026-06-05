@@ -90,9 +90,9 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
   components.push(
     new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
-        .setCustomId(buildId(user.id, "skills", "guide"))
-        .setLabel("Overview")
-        .setEmoji("📖")
+        .setCustomId(buildId(user.id, "skills", "actives"))
+        .setLabel("Actives")
+        .setEmoji("⚡")
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId(buildId(user.id, "skills", "respec"))
@@ -110,38 +110,62 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
   return { embeds: [embed], components, files: [image] };
 }
 
-/** Text overview of the class's skill tree — what every node does, and which you've taken. */
-export function renderSkillGuide(player: RpgPlayer, user: User, nodeIds: string[]): RpgScreen {
+/** Active-skill viewer: pick an active from the menu to read exactly what it does. */
+export function renderActiveSkills(
+  player: RpgPlayer,
+  user: User,
+  nodeIds: string[],
+  selectedId?: string,
+): RpgScreen {
   const tree = getTree(player.classId);
   const cls = classDef(player.classId);
   if (!tree) {
     const embed = new EmbedBuilder()
       .setColor(RPG.embedColor)
-      .setTitle("🌳  Skill Tree")
+      .setTitle("⚡  Active Skills")
       .setDescription("Your class's skill tree isn't available yet — Warrior is in testing.");
     return { embeds: [embed], components: [backOnlyRow(user.id)] };
   }
 
+  const actives = tree.nodes.filter((n) => n.type === "active");
+  if (actives.length === 0) {
+    const embed = new EmbedBuilder()
+      .setColor(RPG.embedColor)
+      .setTitle(`⚡  ${cls.name} — Active Skills`)
+      .setDescription("This class has no active skills yet.");
+    return { embeds: [embed], components: [backOnlyRow(user.id)] };
+  }
+
   const allocated = new Set(nodeIds);
-  const points = player.level - nodeIds.length;
-  const lines = tree.nodes
-    .filter((n) => n.type !== "root")
-    .map((n) => {
-      const mark = allocated.has(n.id) ? "✅" : "▫️";
-      const active = n.type === "active" ? " ⚡" : "";
-      return `${mark} **${n.name}**${active} — ${n.desc}`;
-    });
+  const selected = actives.find((a) => a.id === selectedId) ?? actives[0];
+  const unlocked = allocated.has(selected.id);
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle(`${cls.emoji}  ${cls.name} — Skill Tree`)
+    .setTitle(`⚡  ${cls.name} — Active Skills`)
     .setDescription(
       [
-        `**Points free:** ${points}`,
-        "Allocate from the tree screen — you can only take a node connected to one you already have. ⚡ marks an active ability (used in Dungeons).",
+        `**${selected.name}**  ${unlocked ? "✅ Unlocked" : "🔒 Locked"}`,
         "",
-        ...lines,
+        selected.detail ?? selected.desc,
+        "",
+        unlocked
+          ? "_Active skills are used in Dungeons._"
+          : "_Allocate this node in the skill tree to unlock it. Active skills are used in Dungeons._",
       ].join("\n"),
+    );
+
+  const picker = new StringSelectMenuBuilder()
+    .setCustomId(buildId(user.id, "skills", "actives"))
+    .setPlaceholder("Choose an active skill…")
+    .addOptions(
+      actives.map((a) => ({
+        label: a.name,
+        description: allocated.has(a.id) ? "Unlocked" : "Locked",
+        value: a.id,
+        default: a.id === selected.id,
+        emoji: "⚡",
+      })),
     );
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -157,5 +181,8 @@ export function renderSkillGuide(player: RpgPlayer, user: User, nodeIds: string[
       .setStyle(ButtonStyle.Secondary),
   );
 
-  return { embeds: [embed], components: [row] };
+  return {
+    embeds: [embed],
+    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(picker), row],
+  };
 }
