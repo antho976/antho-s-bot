@@ -2,11 +2,12 @@ import { type Message } from "discord.js";
 import { track } from "@/server/core/analytics";
 import { logger } from "@/server/core/logger";
 import { chatCompletion, hasOpenRouterKey } from "@/server/integrations/openrouter/client";
-import { stripReasoning } from "./domain/clean";
+import { cleanReply } from "./domain/clean";
 import { decideReply } from "./domain/decide";
 import { isReplyWorthy } from "./domain/filter";
 import { buildChatMessages, type HistoryItem } from "./domain/prompt";
-import { getConfig, listMemoryContent, parseChannels } from "./queries";
+import { enqueueReply } from "./queue";
+import { getConfig, listMemoryContent, parseChannels, type SmartReplyConfig } from "./queries";
 
 // Runtime-only throttling state (intentionally not persisted — resetting on restart is fine and
 // keeps the message path DB-write-free). Cooldown is per channel; the daily cap is per guild.
@@ -14,13 +15,13 @@ const lastReplyAt = new Map<string, number>();
 const daily = new Map<string, { day: string; count: number }>();
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
-/** MessageCreate handler: decide whether to chime in, then generate + send a reply. */
+/** MessageCreate handler: decide whether to chime in, then queue the reply for serial sending. */
 export async function handleSmartReply(message: Message): Promise<void> {
   if (!message.inGuild()) return;
   const me = message.client.user;
   if (!me || message.author.id === me.id) return; // never reply to ourselves (loop guard)
 
-  let config;
+  let config: SmartReplyConfig;
   try {
     config = await getConfig(message.guildId);
   } catch {
@@ -41,6 +42,10 @@ export async function handleSmartReply(message: Message): Promise<void> {
   });
   if (!decision.reply) return;
 
+  // From here down there is NO await until the job is queued, so the cooldown/cap checks and the
+  // reservation below are atomic per event — concurrent message handlers can't all slip past the
+  // gates before the first reply is reserved.
+
   // Mentions bypass the cooldown (an explicit ping should always land) but still respect the
   // daily cap so a runaway can't blow through OpenRouter's free-tier limits.
   if (!isMention) {
@@ -52,47 +57,55 @@ export async function handleSmartReply(message: Message): Promise<void> {
     if (d && d.day === todayKey() && d.count >= config.dailyCap) return;
   }
 
-  try {
-    const [memory, history] = await Promise.all([
-      listMemoryContent(message.guildId),
-      fetchHistory(message, config.contextMessages, me.id),
-    ]);
+  // Reserve the slot up front (before the async work runs) so a burst of pings can't all pass.
+  lastReplyAt.set(message.channelId, Date.now());
+  bumpDaily(message.guildId);
 
-    const messages = buildChatMessages({
-      botName: config.botName,
-      persona: config.persona,
-      memory,
-      history,
-    });
+  // Serialize generation+send so a flood of pings is answered one at a time, in order, instead
+  // of firing concurrent OpenRouter calls.
+  const queued = enqueueReply(() => generateAndSend(message, config, me.id, decision.reason));
+  if (!queued) logger.debug("smart-reply", "Reply queue full — dropped a message");
+}
 
-    await message.channel.sendTyping().catch(() => {});
+/** Build context, call the model, and send the reply. Runs serially via the queue. */
+async function generateAndSend(
+  message: Message<true>,
+  config: SmartReplyConfig,
+  selfId: string,
+  reason: string,
+): Promise<void> {
+  const [memory, history] = await Promise.all([
+    listMemoryContent(message.guildId),
+    fetchHistory(message, config.contextMessages, selfId),
+  ]);
 
-    const raw = await chatCompletion({
-      model: config.model,
-      // Headroom beyond the answer budget so reasoning models can think *and* still answer
-      // before hitting the cap (their hidden thinking counts against max_tokens).
-      messages,
-      maxTokens: Math.ceil(config.maxReplyChars / 3) + 600,
-    });
-    if (!raw) return;
+  const messages = buildChatMessages({
+    botName: config.botName,
+    persona: config.persona,
+    memory,
+    history,
+  });
 
-    const text = stripReasoning(raw);
-    if (!text) return; // model returned only reasoning (e.g. truncated) — skip rather than dump it
+  await message.channel.sendTyping().catch(() => {});
 
-    await message.reply({
-      content: text.slice(0, config.maxReplyChars),
-      allowedMentions: { parse: [] }, // never let generated text ping roles/@everyone
-    });
+  const raw = await chatCompletion({
+    model: config.model,
+    // Headroom beyond the answer budget so reasoning models can think *and* still answer
+    // before hitting the cap (their hidden thinking counts against max_tokens).
+    messages,
+    maxTokens: Math.ceil(config.maxReplyChars / 3) + 600,
+  });
+  if (!raw) return;
 
-    lastReplyAt.set(message.channelId, Date.now());
-    bumpDaily(message.guildId);
-    await track(message.guildId, "smartreply.reply", {
-      reason: decision.reason,
-      model: config.model,
-    });
-  } catch (err) {
-    logger.warn("smart-reply", "Failed to generate or send reply", err);
-  }
+  const text = cleanReply(raw);
+  if (!text) return; // model returned only reasoning (e.g. truncated) — skip rather than dump it
+
+  await message.reply({
+    content: text.slice(0, config.maxReplyChars),
+    allowedMentions: { parse: [] }, // never let generated text ping roles/@everyone
+  });
+
+  await track(message.guildId, "smartreply.reply", { reason, model: config.model });
 }
 
 function bumpDaily(guildId: string): void {
