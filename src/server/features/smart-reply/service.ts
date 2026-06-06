@@ -2,6 +2,7 @@ import { type Message } from "discord.js";
 import { track } from "@/server/core/analytics";
 import { logger } from "@/server/core/logger";
 import { chatCompletion, hasOpenRouterKey } from "@/server/integrations/openrouter/client";
+import { stripReasoning } from "./domain/clean";
 import { decideReply } from "./domain/decide";
 import { isReplyWorthy } from "./domain/filter";
 import { buildChatMessages, type HistoryItem } from "./domain/prompt";
@@ -66,12 +67,17 @@ export async function handleSmartReply(message: Message): Promise<void> {
 
     await message.channel.sendTyping().catch(() => {});
 
-    const text = await chatCompletion({
+    const raw = await chatCompletion({
       model: config.model,
+      // Headroom beyond the answer budget so reasoning models can think *and* still answer
+      // before hitting the cap (their hidden thinking counts against max_tokens).
       messages,
-      maxTokens: Math.max(64, Math.ceil(config.maxReplyChars / 3)),
+      maxTokens: Math.ceil(config.maxReplyChars / 3) + 600,
     });
-    if (!text) return;
+    if (!raw) return;
+
+    const text = stripReasoning(raw);
+    if (!text) return; // model returned only reasoning (e.g. truncated) — skip rather than dump it
 
     await message.reply({
       content: text.slice(0, config.maxReplyChars),
