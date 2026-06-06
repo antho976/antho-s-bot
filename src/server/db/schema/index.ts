@@ -15,3 +15,4 @@ export * from "../../features/polls/schema";
 export * from "../../features/birthdays/schema";
 export * from "../../features/pets/schema";
 export * from "../../features/rpg/schema";
+export * from "../../features/smart-reply/schema";

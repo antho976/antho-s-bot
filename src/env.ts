@@ -24,6 +24,9 @@ const schema = z.object({
   TWITCH_EVENTSUB_SECRET: z.string().optional(),
   YOUTUBE_API_KEY: z.string().optional(),
 
+  // Smart-reply (AI chat) — OpenRouter key. Optional; the feature stays off until it's set.
+  OPENROUTER_API_KEY: z.string().optional(),
+
   LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(14),
 
   // Dev tooling — set "true" ONLY on the local test bot. Unlocks RPG cheat buttons and removes

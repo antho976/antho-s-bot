@@ -11,6 +11,7 @@ import { poll } from "./poll";
 import { giveaway } from "./giveaway";
 import { polllist } from "./polllist";
 import { giveawaylist } from "./giveawaylist";
+import { ai } from "./ai";
 
 // Static command list. Order here is the order they register with Discord.
 export const commands: BotCommand[] = [
@@ -26,6 +27,7 @@ export const commands: BotCommand[] = [
   giveaway,
   polllist,
   giveawaylist,
+  ai,
 ];
 
 export const commandMap = new Map<string, BotCommand>(
