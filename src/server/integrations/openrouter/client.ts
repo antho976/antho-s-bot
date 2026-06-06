@@ -44,6 +44,9 @@ export async function chatCompletion(opts: {
         messages: opts.messages,
         max_tokens: opts.maxTokens ?? 300,
         temperature: opts.temperature ?? 0.8,
+        // Ask OpenRouter to keep reasoning tokens out of the response. Models that emit
+        // <think> inline ignore this — the smart-reply service strips those defensively.
+        reasoning: { exclude: true },
       }),
       signal: controller.signal,
     });
