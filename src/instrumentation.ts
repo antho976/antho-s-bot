@@ -60,6 +60,7 @@ export async function register(): Promise<void> {
       const { registerGiveawayEvents } = await import("@/server/features/giveaways/events");
       const { registerPollEvents } = await import("@/server/features/polls/events");
       const { registerRpgEvents } = await import("@/server/features/rpg/events");
+      const { registerSmartReplyEvents } = await import("@/server/features/smart-reply/events");
       registerLevelingEvents(client);
       registerLeaderboardEvents(client);
       registerWelcomeEvents(client);
@@ -71,6 +72,7 @@ export async function register(): Promise<void> {
       registerGiveawayEvents(client);
       registerPollEvents(client);
       registerRpgEvents(client);
+      registerSmartReplyEvents(client);
     }
   } catch (err) {
     logger.error("boot", "Feature events failed to register", err);
