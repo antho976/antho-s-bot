@@ -20,7 +20,6 @@ function backToCombat(ownerId: string, label = "Back"): ButtonBuilder {
   return new ButtonBuilder()
     .setCustomId(buildId(ownerId, "combat"))
     .setLabel(label)
-    .setEmoji("◀️")
     .setStyle(ButtonStyle.Secondary);
 }
 

@@ -14,7 +14,6 @@ export function renderPlaceholder(ownerId: string, view: string, _user: User): R
     new ButtonBuilder()
       .setCustomId(buildId(ownerId, "hub"))
       .setLabel("Back")
-      .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),
   );
   return { embeds: [embed], components: [row] };

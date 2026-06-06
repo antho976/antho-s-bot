@@ -185,7 +185,9 @@ export async function handleRpgComponent(interaction: RpgComponent): Promise<Rpg
       }
       // Bare "combat" → the Combat home; any adventure action → the Adventure picker.
       if (!route.action) {
-        return { kind: "update", screen: renderCombatHome(interaction.user) };
+        const { player: cp, charges } = await withCharges(fresh);
+        const keys = await countKeys(fresh.id);
+        return { kind: "update", screen: renderCombatHome(cp, interaction.user, charges, keys) };
       }
       const { player: cp, charges } = await withCharges(fresh);
       return { kind: "update", screen: renderAdventure(cp, interaction.user, charges) };

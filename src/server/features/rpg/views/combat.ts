@@ -26,26 +26,62 @@ function hpBar(cur: number, max: number): string {
   return "▰".repeat(filled) + "▱".repeat(10 - filled);
 }
 
-function backButton(ownerId: string, label: string): ButtonBuilder {
+/** A jump-straight-to-the-hub button — kept (with its 🏠) on screens more than one step away. */
+function hubButton(ownerId: string, label = "Hub"): ButtonBuilder {
   return new ButtonBuilder()
     .setCustomId(buildId(ownerId, "hub"))
     .setLabel(label)
-    .setEmoji("◀️")
+    .setEmoji("🏠")
     .setStyle(ButtonStyle.Secondary);
 }
 
-/** The Combat landing screen — explains the two combat modes and routes to each. */
-export function renderCombatHome(user: User): RpgScreen {
+/** A plain one-step-back button (no emoji) routing to `view`. */
+function backButton(ownerId: string, view: string, label = "Back"): ButtonBuilder {
+  return new ButtonBuilder()
+    .setCustomId(buildId(ownerId, view))
+    .setLabel(label)
+    .setStyle(ButtonStyle.Secondary);
+}
+
+/** The Combat overview — your readiness at a glance, plus the two fight modes side by side. */
+export function renderCombatHome(
+  player: RpgPlayer,
+  user: User,
+  charges: Charges,
+  keys: number,
+): RpgScreen {
+  const max = maxHp(classDef(player.classId), player.level);
+  const full = charges.charges >= charges.max;
+  const chargeLine = `⚡ **${charges.charges}/${charges.max}**${full ? " · full" : ` · next ${formatRemaining(charges.nextInMs)}`}`;
+
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
-    .setTitle("⚔️ Combat")
+    .setTitle("⚔️  Combat")
     .setDescription(
       [
-        "Pick how you want to fight:",
-        "",
-        "⚔️ **Adventures** — quick fights for **XP**, **gold** & **keys**. Spend a charge; a lone foe resolves instantly, while tougher tiers throw **packs** you fight turn-by-turn.",
-        "💀 **Dungeons** — multi-room runs that cost a **key**. Active, turn-based combat with your class abilities — deadlier, but richer loot.",
+        `🛡️ **Lv ${player.level}**  ·  ❤️ ${hpBar(player.hp, max)} ${player.hp}/${max}`,
+        `${chargeLine}  ·  🗝️ **${keys}** key${keys === 1 ? "" : "s"}`,
       ].join("\n"),
+    )
+    .addFields(
+      {
+        name: "⚔️ Adventures",
+        value: [
+          "Spend ⚡ **1 charge**",
+          "✨ XP · 💰 gold · 🗝️ keys",
+          "A lone foe settles instantly; tougher tiers throw **packs** you fight turn-by-turn.",
+        ].join("\n"),
+        inline: true,
+      },
+      {
+        name: "💀 Dungeons",
+        value: [
+          "Spend 🗝️ **keys**",
+          "🎯 Turn-based, multi-room runs",
+          "Deadlier than adventures — but **richer loot**.",
+        ].join("\n"),
+        inline: true,
+      },
     );
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -59,11 +95,7 @@ export function renderCombatHome(user: User): RpgScreen {
       .setLabel("Dungeons")
       .setEmoji("💀")
       .setStyle(ButtonStyle.Danger),
-    new ButtonBuilder()
-      .setCustomId(buildId(user.id, "hub"))
-      .setLabel("Back")
-      .setEmoji("◀️")
-      .setStyle(ButtonStyle.Secondary),
+    backButton(user.id, "hub"),
   );
 
   return { embeds: [embed], components: [row] };
@@ -110,13 +142,7 @@ export function renderAdventure(
     }),
   );
 
-  const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(buildId(user.id, "combat"))
-      .setLabel("Back")
-      .setEmoji("◀️")
-      .setStyle(ButtonStyle.Secondary),
-  );
+  const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(backButton(user.id, "combat"));
 
   return { embeds: [embed], components: [diffRow, nav] };
 }
@@ -197,7 +223,7 @@ export function renderAdventureResult(report: AdventureReport, user: User): RpgS
       .setLabel("Adventure again")
       .setEmoji("⚔️")
       .setStyle(ButtonStyle.Primary),
-    backButton(user.id, "Hub"),
+    hubButton(user.id),
   );
 
   return { embeds: [embed], components: [row] };

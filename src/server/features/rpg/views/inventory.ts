@@ -60,7 +60,6 @@ export function renderInventory(user: User, rows: RpgInventoryRow[]): RpgScreen 
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "player"))
       .setLabel("Back")
-      .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),
   );
   return { embeds: [embed], components: [row] };

@@ -27,7 +27,6 @@ function back(ownerId: string, view: string, action: string | undefined, label =
   return new ButtonBuilder()
     .setCustomId(buildId(ownerId, view, action))
     .setLabel(label)
-    .setEmoji("◀️")
     .setStyle(ButtonStyle.Secondary);
 }
 

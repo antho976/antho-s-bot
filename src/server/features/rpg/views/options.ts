@@ -23,7 +23,6 @@ export function renderOptions(user: User, player?: RpgPlayer): RpgScreen {
       new ButtonBuilder()
         .setCustomId(buildId(user.id, "hub"))
         .setLabel("Back")
-        .setEmoji("◀️")
         .setStyle(ButtonStyle.Secondary),
     ),
   ];
@@ -70,7 +69,6 @@ export function renderDeleteConfirm(user: User): RpgScreen {
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "options"))
       .setLabel("Cancel")
-      .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),
   );
 

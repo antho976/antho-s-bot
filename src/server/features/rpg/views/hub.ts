@@ -108,7 +108,6 @@ export function renderPlayer(player: RpgPlayer, user: User): RpgScreen {
     new ButtonBuilder()
       .setCustomId(buildId(user.id, "hub"))
       .setLabel("Back")
-      .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),
   );
 
