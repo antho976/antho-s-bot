@@ -68,6 +68,7 @@ import {
 import {
   actInDungeon,
   countKeys,
+  dungeonActives,
   enterDungeon,
   fleeDungeon,
   getActiveRun,
@@ -415,12 +416,14 @@ async function handleDungeon(
   const user = interaction.user;
   const action = route.action;
   const dungeonName = (id: string) => dungeonDef(id)?.name ?? "the dungeon";
+  // The actives this player can cast in the fight = the active nodes they've allocated in their tree.
+  const actives = dungeonActives(player.classId, await getAllocatedNodeIds(player.id));
 
   // Entry / resume — a live run takes you straight back to the fight.
   if (!action || action === "list") {
     const run = await getActiveRun(player);
     return run && run.status === "active"
-      ? { kind: "update", screen: renderDungeonCombat(user, run, player.classId) }
+      ? { kind: "update", screen: renderDungeonCombat(user, run, actives) }
       : { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
   }
 
@@ -435,7 +438,7 @@ async function handleDungeon(
     }
     const run = await getActiveRun(player);
     return run
-      ? { kind: "update", screen: renderDungeonCombat(user, run, player.classId) }
+      ? { kind: "update", screen: renderDungeonCombat(user, run, actives) }
       : { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
   }
 
@@ -444,11 +447,6 @@ async function handleDungeon(
     if (!res) return { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
     void track(guildId, "rpg_dungeon_end", { outcome: "fled", dungeonId: res.run.dungeonId });
     return { kind: "update", screen: renderDungeonResult(user, res.summary, dungeonName(res.run.dungeonId)) };
-  }
-
-  // Placeholder until the active-skills system is built (button lives on the combat board).
-  if (action === "actives") {
-    return { kind: "reply", content: "⚡ Active skills are coming soon." };
   }
 
   // Combat actions → one round each.
@@ -467,7 +465,7 @@ async function handleDungeon(
   if (!act) {
     const run = await getActiveRun(player);
     return run && run.status === "active"
-      ? { kind: "update", screen: renderDungeonCombat(user, run, player.classId) }
+      ? { kind: "update", screen: renderDungeonCombat(user, run, actives) }
       : { kind: "update", screen: renderDungeonList(user, player, await countKeys(player.id)) };
   }
 
@@ -483,5 +481,5 @@ async function handleDungeon(
     });
     return { kind: "update", screen: renderDungeonResult(user, outcome.summary, dungeonName(outcome.run.dungeonId)) };
   }
-  return { kind: "update", screen: renderDungeonCombat(user, outcome.run, player.classId) };
+  return { kind: "update", screen: renderDungeonCombat(user, outcome.run, actives) };
 }

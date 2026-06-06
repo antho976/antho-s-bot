@@ -124,38 +124,36 @@ export function dungeonDef(id: string): DungeonDef | undefined {
 }
 
 /**
- * A combat skill usable in a dungeon, on a per-run cooldown (turns). `classId` gates class-only
- * skills; the rest are universal. The pure reducer reads these numeric fields — no per-skill code.
+ * A combat skill cast in a dungeon, on a per-run cooldown (turns). These are the *actives* from the
+ * class skill tree — a player may only use one they've allocated (the `id` matches the tree node's
+ * `ability`). The pure reducer reads these numeric fields — no per-skill code. `buff` applies a
+ * timed combat modifier (e.g. +damage dealt / -damage taken for N turns).
  */
 export type Ability = {
   id: string;
   name: string;
   emoji: string;
-  classId?: string; // undefined = available to every class
+  classId?: string; // which class tree this active belongs to (metadata)
   cooldown: number; // turns before it can be used again
   damageMult?: number; // × your attack damage (omit = no attack)
   hits?: number; // number of strikes (default 1 when damageMult set)
   healPct?: number; // heal this fraction of max HP
   guard?: boolean; // also raise guard against the foe's next blow
   autoWeakness?: boolean; // strikes the foe's weakness regardless of coating
+  buff?: { dmgMult?: number; dmgTakenMult?: number; turns: number }; // timed combat modifier
   desc: string;
 };
 
+// Warrior tree actives. ids match the `ability` on the active nodes in skills/trees.ts.
 export const ABILITIES: Ability[] = [
-  // Universal
-  { id: "heavy_strike", name: "Heavy Strike", emoji: "🔨", cooldown: 3, damageMult: 2.2, desc: "A committed blow for heavy damage." },
-  { id: "mend", name: "Mend", emoji: "💚", cooldown: 4, healPct: 0.32, desc: "Bind your wounds, restoring HP." },
-  // Class signatures
-  { id: "brace", name: "Brace", emoji: "🛡️", classId: "warrior", cooldown: 4, healPct: 0.12, guard: true, desc: "Raise your shield: guard the next blow and recover a little." },
-  { id: "arcane_surge", name: "Arcane Surge", emoji: "🔮", classId: "mage", cooldown: 3, damageMult: 1.7, autoWeakness: true, desc: "Unleash power that always strikes the foe's weakness." },
-  { id: "volley", name: "Volley", emoji: "🏹", classId: "archer", cooldown: 3, damageMult: 0.8, hits: 3, desc: "Loose three quick arrows." },
+  { id: "berserk", name: "Berserk", emoji: "🔥", classId: "warrior", cooldown: 4, buff: { dmgMult: 1.5, dmgTakenMult: 1.25, turns: 3 }, desc: "For 3 turns: +50% damage dealt, but +25% damage taken." },
+  { id: "onslaught", name: "Onslaught", emoji: "🗡️", classId: "warrior", cooldown: 3, damageMult: 0.8, hits: 3, desc: "Three rapid strikes at 80% damage each." },
+  { id: "shield_wall", name: "Shield Wall", emoji: "🧱", classId: "warrior", cooldown: 4, buff: { dmgTakenMult: 0.6, turns: 3 }, desc: "Take 40% less damage for 3 turns." },
+  { id: "guardian", name: "Guardian", emoji: "🛡️", classId: "warrior", cooldown: 4, healPct: 0.18, guard: true, desc: "Guard the next blow and heal 18% of max HP." },
+  { id: "rampage", name: "Rampage", emoji: "💢", classId: "warrior", cooldown: 4, buff: { dmgMult: 1.5, turns: 3 }, desc: "+50% damage for 3 turns." },
+  { id: "frenzy", name: "Frenzy", emoji: "💥", classId: "warrior", cooldown: 3, damageMult: 2.2, desc: "A furious 220% damage blow." },
 ];
 
 export const ABILITY_MAP: Record<string, Ability> = Object.fromEntries(
   ABILITIES.map((a) => [a.id, a]),
 );
-
-/** Abilities a class may use in a dungeon: every universal one, plus its class signature. */
-export function abilitiesFor(classId: string): Ability[] {
-  return ABILITIES.filter((a) => !a.classId || a.classId === classId);
-}

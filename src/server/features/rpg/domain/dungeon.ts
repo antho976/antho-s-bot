@@ -22,6 +22,16 @@ export type EnemyState = {
 
 export type RewardState = { xp: number; gold: number; items: { itemId: string; qty: number }[] };
 
+/** A timed combat modifier from an active (e.g. Berserk). Ticks down one per round; gone at 0. */
+export type ActiveBuff = {
+  id: string;
+  name: string;
+  emoji: string;
+  dmgMult: number; // × damage you deal (1 = none)
+  dmgTakenMult: number; // × damage you take (1 = none)
+  turns: number;
+};
+
 /** The whole serialisable run, stored as JSON in rpg_dungeon_runs.stateJson. */
 export type RunState = {
   dungeonId: string;
@@ -32,6 +42,7 @@ export type RunState = {
   coating: string | null; // active blade element, or null
   coatingHits: number; // attacks the coating has left
   cooldowns: Record<string, number>; // abilityId → turns remaining
+  buffs: ActiveBuff[]; // timed modifiers from actives
   turn: number;
   log: string[]; // last few combat-log lines
   reward: RewardState; // loot accrued from cleared rooms (granted on win/flee, lost on death)
@@ -66,6 +77,7 @@ export function startRun(dungeonId: string, maxHp: number, hp: number): RunState
     coating: null,
     coatingHits: 0,
     cooldowns: {},
+    buffs: [],
     turn: 1,
     log: [`You enter ${dungeon?.name ?? "the dungeon"}.${first ? ` ${first.emoji} A ${first.name} bars the way.` : ""}`],
     reward: { xp: 0, gold: 0, items: [] },
@@ -80,6 +92,7 @@ function clone(s: RunState): RunState {
     ...s,
     enemy: { ...s.enemy },
     cooldowns: { ...s.cooldowns },
+    buffs: (s.buffs ?? []).map((b) => ({ ...b })), // ?? tolerates runs persisted before buffs existed
     log: [...s.log],
     reward: { xp: s.reward.xp, gold: s.reward.gold, items: s.reward.items.map((i) => ({ ...i })) },
   };
@@ -112,6 +125,15 @@ function tickCooldowns(s: RunState): void {
   }
 }
 
+function tickBuffs(s: RunState): void {
+  s.buffs = s.buffs.map((b) => ({ ...b, turns: b.turns - 1 })).filter((b) => b.turns > 0);
+}
+
+/** Product of a buff field across active buffs (1 when none). */
+function buffMult(s: RunState, key: "dmgMult" | "dmgTakenMult"): number {
+  return s.buffs.reduce((m, b) => m * b[key], 1);
+}
+
 /** Resolve a damaging action (attack or a damaging ability): roll each hit, apply, log, wear the
  *  coating. Mutates `s` — read s.enemy.hp afterwards for the result. */
 function strike(
@@ -125,11 +147,12 @@ function strike(
   const usedCoating = !opts.auto && s.coating !== null;
   const mult = elementMult(s.coating, enemy, opts.auto ?? false);
 
+  const dealtMult = buffMult(s, "dmgMult");
   let total = 0;
   let crit = false;
   for (let i = 0; i < hits && s.enemy.hp > 0; i++) {
     const isCrit = rng() < stats.critChance;
-    const dmg = Math.max(1, Math.round(stats.damage * opts.mult * mult * (isCrit ? stats.critMult : 1)));
+    const dmg = Math.max(1, Math.round(stats.damage * opts.mult * mult * dealtMult * (isCrit ? stats.critMult : 1)));
     s.enemy.hp = Math.max(0, s.enemy.hp - dmg);
     total += dmg;
     crit = crit || isCrit;
@@ -183,7 +206,7 @@ function enemyTurn(
   if (rng() < stats.dodge) {
     push(s, `💨 You dodge the ${enemy.name}'s ${heavy ? "heavy " : ""}blow.`);
   } else {
-    dmg = Math.round(dmg * (1 - stats.dmgReduction));
+    dmg = Math.round(dmg * (1 - stats.dmgReduction) * buffMult(s, "dmgTakenMult"));
     if (guarding) dmg = Math.round(dmg * (1 - DUNGEON.guardReduction));
     dmg = Math.max(1, dmg);
     s.hp = Math.max(0, s.hp - dmg);
@@ -229,6 +252,7 @@ export function applyAction(
     s.enemy = newEnemyState(dungeon.rooms[nextIndex]);
     s.coating = null; // fresh blade for a fresh foe
     s.coatingHits = 0;
+    s.buffs = []; // buffs don't carry between rooms
     const next = enemyDef(dungeon.rooms[nextIndex]);
     s.log = [`You press deeper.${next ? ` ${next.emoji} A ${next.name} emerges.` : ""}`];
     s.turn += 1;
@@ -264,6 +288,18 @@ export function applyAction(
         push(s, `${ab.emoji} ${ab.name}: +**${heal}** HP.`);
       }
       if (ab.guard) guarding = true;
+      if (ab.buff) {
+        s.buffs = s.buffs.filter((b) => b.id !== ab.id); // recast refreshes rather than stacks
+        s.buffs.push({
+          id: ab.id,
+          name: ab.name,
+          emoji: ab.emoji,
+          dmgMult: ab.buff.dmgMult ?? 1,
+          dmgTakenMult: ab.buff.dmgTakenMult ?? 1,
+          turns: ab.buff.turns,
+        });
+        push(s, `${ab.emoji} ${ab.name} — active for ${ab.buff.turns} turns.`);
+      }
       if (ab.damageMult) {
         strike(s, enemy, stats, { mult: ab.damageMult, hits: ab.hits, auto: ab.autoWeakness, label: `${ab.emoji} ${ab.name}` }, rng);
       }
@@ -276,12 +312,14 @@ export function applyAction(
   if (s.enemy.hp <= 0) {
     onEnemyDeath(s, enemy);
     tickCooldowns(s);
+    tickBuffs(s);
     s.turn += 1;
     return s;
   }
 
   enemyTurn(s, enemy, stats, guarding, rng);
   tickCooldowns(s);
+  tickBuffs(s);
   s.turn += 1;
   return s;
 }

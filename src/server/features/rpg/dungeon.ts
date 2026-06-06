@@ -4,10 +4,11 @@
 // to the player exactly once at finalisation — never per-render — so re-reads can't double-pay.
 import { applyXp } from "./domain/adventure";
 import { applyAction, startRun, type DungeonAction, type RunState } from "./domain/dungeon";
-import { abilitiesFor, dungeonDef } from "./dungeon-config";
+import { ABILITY_MAP, dungeonDef, type Ability } from "./dungeon-config";
 import { equippedWeaponDamage } from "./blacksmith";
 import { classDef, maxHp } from "./domain/stats";
 import { computeStats } from "./skills/compute";
+import { getTree } from "./skills/trees";
 import {
   addItem,
   deleteDungeonRun,
@@ -39,6 +40,21 @@ export async function getActiveRun(player: RpgPlayer): Promise<RunState | null> 
   } catch {
     return null;
   }
+}
+
+/** The dungeon abilities a player can cast: the active nodes they've allocated in their class tree. */
+export function dungeonActives(classId: string, allocatedNodeIds: string[]): Ability[] {
+  const tree = getTree(classId);
+  if (!tree) return [];
+  const owned = new Set(allocatedNodeIds);
+  const out: Ability[] = [];
+  for (const node of tree.nodes) {
+    if (node.type === "active" && node.ability && owned.has(node.id)) {
+      const ab = ABILITY_MAP[node.ability];
+      if (ab) out.push(ab);
+    }
+  }
+  return out;
 }
 
 /** Combat StatBlock for a dungeon turn — same composition Adventures use (class + skills + weapon). */
@@ -127,8 +143,11 @@ export async function actInDungeon(
   const run = await getActiveRun(player);
   if (!run || run.status !== "active") return null;
 
-  if (action.type === "ability" && !abilitiesFor(player.classId).some((a) => a.id === action.id)) {
-    return { kind: "run", run };
+  if (action.type === "ability") {
+    const allocated = await getAllocatedNodeIds(player.id);
+    if (!dungeonActives(player.classId, allocated).some((a) => a.id === action.id)) {
+      return { kind: "run", run }; // not an active you've unlocked — ignore
+    }
   }
 
   const next = applyAction(run, action, await statsFor(player));

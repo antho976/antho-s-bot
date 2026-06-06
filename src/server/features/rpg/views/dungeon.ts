@@ -9,7 +9,7 @@ import {
 import { ITEMS, RPG } from "../config";
 import { buildId } from "../domain/custom-id";
 import { xpBar } from "../domain/stats";
-import { DUNGEONS, ELEMENT_MAP, dungeonDef, enemyDef } from "../dungeon-config";
+import { DUNGEONS, ELEMENT_MAP, dungeonDef, enemyDef, type Ability } from "../dungeon-config";
 import type { DungeonSummary } from "../dungeon";
 import type { RunState } from "../domain/dungeon";
 import type { RpgPlayer } from "../queries";
@@ -86,7 +86,7 @@ export function renderDungeonList(
 
 /** The live combat board: foe + your HP bars, blade coating, the round log, and the action buttons.
  *  When a (non-boss) room is cleared it switches to a Descend / Leave choice. */
-export function renderDungeonCombat(user: User, run: RunState, _classId: string): RpgScreen {
+export function renderDungeonCombat(user: User, run: RunState, actives: Ability[]): RpgScreen {
   const dungeon = dungeonDef(run.dungeonId);
   const enemy = enemyDef(run.enemy.id);
   if (!dungeon || !enemy) {
@@ -111,10 +111,14 @@ export function renderDungeonCombat(user: User, run: RunState, _classId: string)
         .filter(Boolean)
         .join("\n");
 
+  const buffLine = (run.buffs ?? []).map((b) => `${b.emoji} ${b.name} (${b.turns})`).join(" · ");
   const youPanel = [
     `🧍 **${user.displayName}**`,
     `❤️ ${xpBar(run.hp, run.maxHp)} ${run.hp}/${run.maxHp}`,
-  ].join("\n");
+    buffLine ? `✨ ${buffLine}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
@@ -139,14 +143,31 @@ export function renderDungeonCombat(user: User, run: RunState, _classId: string)
     return { embeds: [embed], components: [row] };
   }
 
-  // Core actions. Abilities + blade-coating are being reworked; Active Skills is a placeholder for now.
+  // Core actions, then a row (or two) of the actives you've allocated in the skill tree — each on its
+  // own per-run cooldown (label shows the turns left).
   const coreRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId(buildId(user.id, "dungeon", "attack")).setLabel("Attack").setEmoji("⚔️").setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId(buildId(user.id, "dungeon", "guard")).setLabel("Guard").setEmoji("🛡️").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(buildId(user.id, "dungeon", "actives")).setLabel("Active Skills").setEmoji("⚡").setStyle(ButtonStyle.Secondary),
   );
 
-  return { embeds: [embed], components: [coreRow] };
+  const rows: ActionRowBuilder<ButtonBuilder>[] = [coreRow];
+  for (let i = 0; i < actives.length; i += 5) {
+    rows.push(
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        ...actives.slice(i, i + 5).map((ab) => {
+          const cd = run.cooldowns[ab.id] ?? 0;
+          return new ButtonBuilder()
+            .setCustomId(buildId(user.id, "dungeon", "ability", ab.id))
+            .setLabel(cd > 0 ? `${ab.name} (${cd})` : ab.name)
+            .setEmoji(ab.emoji)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(cd > 0);
+        }),
+      ),
+    );
+  }
+
+  return { embeds: [embed], components: rows };
 }
 
 /** Outcome screen after a run ends (cleared / fled / fallen). */
