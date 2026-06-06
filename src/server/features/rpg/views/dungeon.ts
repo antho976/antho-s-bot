@@ -9,15 +9,7 @@ import {
 import { ITEMS, RPG } from "../config";
 import { buildId } from "../domain/custom-id";
 import { xpBar } from "../domain/stats";
-import {
-  DUNGEONS,
-  ELEMENTS,
-  ELEMENT_MAP,
-  abilitiesFor,
-  dungeonDef,
-  enemyDef,
-  type Ability,
-} from "../dungeon-config";
+import { DUNGEONS, ELEMENT_MAP, dungeonDef, enemyDef } from "../dungeon-config";
 import type { DungeonSummary } from "../dungeon";
 import type { RunState } from "../domain/dungeon";
 import type { RpgPlayer } from "../queries";
@@ -94,7 +86,7 @@ export function renderDungeonList(
 
 /** The live combat board: foe + your HP bars, blade coating, the round log, and the action buttons.
  *  When a (non-boss) room is cleared it switches to a Descend / Leave choice. */
-export function renderDungeonCombat(user: User, run: RunState, classId: string): RpgScreen {
+export function renderDungeonCombat(user: User, run: RunState, _classId: string): RpgScreen {
   const dungeon = dungeonDef(run.dungeonId);
   const enemy = enemyDef(run.enemy.id);
   if (!dungeon || !enemy) {
@@ -119,13 +111,9 @@ export function renderDungeonCombat(user: User, run: RunState, classId: string):
         .filter(Boolean)
         .join("\n");
 
-  const coat = run.coating
-    ? `${ELEMENT_MAP[run.coating]?.emoji ?? ""} ${ELEMENT_MAP[run.coating]?.name ?? "?"} (${run.coatingHits} hit${run.coatingHits === 1 ? "" : "s"} left)`
-    : "uncoated";
   const youPanel = [
     `🧍 **${user.displayName}**`,
     `❤️ ${xpBar(run.hp, run.maxHp)} ${run.hp}/${run.maxHp}`,
-    `🗡️ Blade: ${coat}`,
   ].join("\n");
 
   const embed = new EmbedBuilder()
@@ -151,43 +139,14 @@ export function renderDungeonCombat(user: User, run: RunState, classId: string):
     return { embeds: [embed], components: [row] };
   }
 
-  // Core actions.
+  // Core actions. Abilities + blade-coating are being reworked; Active Skills is a placeholder for now.
   const coreRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId(buildId(user.id, "dungeon", "attack")).setLabel("Attack").setEmoji("⚔️").setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId(buildId(user.id, "dungeon", "guard")).setLabel("Guard").setEmoji("🛡️").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(buildId(user.id, "dungeon", "flee")).setLabel("Flee").setEmoji("🏳️").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(buildId(user.id, "dungeon", "actives")).setLabel("Active Skills").setEmoji("⚡").setStyle(ButtonStyle.Secondary),
   );
 
-  // Abilities (disabled while on cooldown — label shows the remaining turns).
-  const abilityRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    ...abilitiesFor(classId).map((ab: Ability) => {
-      const cd = run.cooldowns[ab.id] ?? 0;
-      return new ButtonBuilder()
-        .setCustomId(buildId(user.id, "dungeon", "ability", ab.id))
-        .setLabel(cd > 0 ? `${ab.name} (${cd})` : ab.name)
-        .setEmoji(ab.emoji)
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(cd > 0);
-    }),
-  );
-
-  // Coat select — the matching element is flagged so you can spot the weakness at a glance.
-  const coatRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-    new StringSelectMenuBuilder()
-      .setCustomId(buildId(user.id, "dungeon", "coat"))
-      .setPlaceholder("Coat your blade…")
-      .addOptions(
-        ELEMENTS.map((el) => ({
-          label: el.name,
-          description:
-            el.id === enemy.weakness ? "Exploits the weakness!" : el.id === enemy.resist ? "Resisted by this foe" : "Neutral",
-          value: el.id,
-          emoji: el.emoji,
-        })),
-      ),
-  );
-
-  return { embeds: [embed], components: [coreRow, abilityRow, coatRow] };
+  return { embeds: [embed], components: [coreRow] };
 }
 
 /** Outcome screen after a run ends (cleared / fled / fallen). */

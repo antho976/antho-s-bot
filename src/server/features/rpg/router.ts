@@ -446,6 +446,11 @@ async function handleDungeon(
     return { kind: "update", screen: renderDungeonResult(user, res.summary, dungeonName(res.run.dungeonId)) };
   }
 
+  // Placeholder until the active-skills system is built (button lives on the combat board).
+  if (action === "actives") {
+    return { kind: "reply", content: "⚡ Active skills are coming soon." };
+  }
+
   // Combat actions → one round each.
   let act: DungeonAction | null = null;
   if (action === "attack") act = { type: "attack" };
