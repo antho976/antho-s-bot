@@ -106,14 +106,22 @@ export function HoneypotSettings({ initial }: { initial: HoneypotConfig }) {
       {/* Alert / ping */}
       <div className="space-y-3">
         <div className="text-sm text-muted">Alert / ping</div>
+        <p className="text-xs text-faint">
+          When tripped, an explanatory embed is posted in the trap channel (action taken, messages
+          purged, and who to DM). The ping target below is mentioned there and shown as the appeal
+          contact.
+        </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Alert channel" hint="Where the trip notice + ping is posted.">
+          <Field
+            label="Mod-log channel (optional)"
+            hint="Also posts a no-ping copy here, including the offender's message. Leave empty to only post in the trap channel."
+          >
             <ChannelSelect
               value={c.alertChannelId ?? ""}
               onChange={(v) => set("alertChannelId", v || null)}
             />
           </Field>
-          <Field label="Ping who?">
+          <Field label="Ping / appeal contact">
             <Select
               value={c.pingTargetType}
               onChange={(e) => set("pingTargetType", e.target.value)}
