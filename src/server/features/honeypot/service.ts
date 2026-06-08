@@ -11,7 +11,21 @@ function isExempt(member: GuildMember, config: HoneypotConfig): boolean {
   return config.exemptRoleIds.some((id) => member.roles.cache.has(id));
 }
 
-/** Fires when a non-exempt member posts in a honeypot channel: mute → purge → ping. */
+/** Compact human duration for a mute, e.g. 40320 → "28d", 120 → "2h", 90 → "90m". */
+function muteDuration(min: number): string {
+  if (min % 1440 === 0) return `${min / 1440}d`;
+  if (min % 60 === 0) return `${min / 60}h`;
+  return `${min}m`;
+}
+
+/** What actually happened to the offender — drives both the log row and the embed. */
+interface Outcome {
+  muteLabel: string | null; // the mute that was applied (null = none/failed)
+  banned: boolean;
+  purged: number;
+}
+
+/** Fires when a non-exempt member posts in a honeypot channel: mute → purge → ban → notify. */
 export async function runHoneypot(message: Message): Promise<void> {
   if (!message.inGuild() || message.author.bot) return;
   // Only ever act on a message the user actually typed. System notices (member-join, boosts,
@@ -27,7 +41,7 @@ export async function runHoneypot(message: Message): Promise<void> {
 
   const userId = message.author.id;
   const snippet = (message.content || "").slice(0, 200);
-  const actions: string[] = [];
+  const outcome: Outcome = { muteLabel: null, banned: false, purged: 0 };
 
   // 1) Delete the triggering message right away.
   if (message.deletable) await message.delete().catch(() => {});
@@ -38,13 +52,13 @@ export async function runHoneypot(message: Message): Promise<void> {
       .add(config.muteRoleId, "Honeypot trap")
       .then(() => true)
       .catch(() => false);
-    if (ok) actions.push("muted (role)");
+    if (ok) outcome.muteLabel = "🔇 Muted (role — stays until removed)";
   } else if (config.muteMode === "timeout" && member.moderatable) {
     const ok = await member
       .timeout(config.timeoutMinutes * 60_000, "Honeypot trap")
       .then(() => true)
       .catch(() => false);
-    if (ok) actions.push(`timeout ${config.timeoutMinutes}m`);
+    if (ok) outcome.muteLabel = `⏳ Timed out for ${muteDuration(config.timeoutMinutes)}`;
   }
 
   // 3) Optional DM — before any ban, while we still share a guild.
@@ -53,72 +67,125 @@ export async function runHoneypot(message: Message): Promise<void> {
   }
 
   // 4) Purge their recent messages server-wide.
-  const purged = await purgeRecentMessages(
+  outcome.purged = await purgeRecentMessages(
     message.guild,
     userId,
     config.purgeLookbackMinutes * 60_000,
   );
-  if (purged > 0) actions.push(`purged ${purged}`);
 
   // 5) Optional ban.
   if (config.alsoBan && member.bannable) {
-    const ok = await member
+    outcome.banned = await member
       .ban({ reason: "Honeypot trap" })
       .then(() => true)
       .catch(() => false);
-    if (ok) actions.push("banned");
   }
 
-  const actionStr = actions.join(", ") || "logged only";
+  const actionStr = summarize(outcome);
   await recordAction({
     guildId: message.guildId,
     userId,
     channelId: message.channelId,
     action: actionStr,
-    purged,
+    purged: outcome.purged,
     snippet,
   });
   await track(message.guildId, "honeypot.triggered", { actions: actionStr });
-  await postAlert(message, config, userId, actionStr, snippet);
+  await notify(message, config, userId, outcome, snippet);
 
   logger.info("honeypot", `Trap tripped by ${message.author.tag}: ${actionStr}`);
 }
 
-function pingFields(config: HoneypotConfig): {
-  content?: string;
-  users: string[];
-  roles: string[];
-} {
+/** Plain one-line summary for the dashboard log row. */
+function summarize(o: Outcome): string {
+  const parts: string[] = [];
+  if (o.muteLabel) parts.push(o.muteLabel);
+  if (o.purged > 0) parts.push(`purged ${o.purged}`);
+  if (o.banned) parts.push("banned");
+  return parts.join(", ") || "logged only";
+}
+
+/** "DM @x" / "Contact @role" — reuses the ping target as the appeal contact. */
+function contactLine(config: HoneypotConfig): string | null {
+  if (config.pingTargetType === "user" && config.pingTargetId) {
+    return `Think this was a mistake? DM <@${config.pingTargetId}>.`;
+  }
+  if (config.pingTargetType === "role" && config.pingTargetId) {
+    return `Think this was a mistake? Contact <@&${config.pingTargetId}>.`;
+  }
+  return null;
+}
+
+/** The actual ping content + allow-list for the configured target (null = no ping). */
+function pingMention(
+  config: HoneypotConfig,
+): { content: string; users: string[]; roles: string[] } | null {
   if (config.pingTargetType === "user" && config.pingTargetId) {
     return { content: `<@${config.pingTargetId}>`, users: [config.pingTargetId], roles: [] };
   }
   if (config.pingTargetType === "role" && config.pingTargetId) {
     return { content: `<@&${config.pingTargetId}>`, users: [], roles: [config.pingTargetId] };
   }
-  return { users: [], roles: [] };
+  return null;
 }
 
-async function postAlert(
+/** The self-explanatory embed: what the trap is, the action taken, how many purged, who to DM. */
+function buildEmbed(
+  userId: string,
+  channelId: string,
+  outcome: Outcome,
+  contact: string | null,
+  snippet: string | null,
+): EmbedBuilder {
+  const actionLines =
+    [outcome.muteLabel, outcome.banned ? "🔨 Banned" : null].filter(Boolean).join("\n") ||
+    "Logged only — couldn't action (check my permissions).";
+
+  const embed = new EmbedBuilder()
+    .setColor(0xef4444)
+    .setTitle("🍯 Honeypot triggered")
+    .setDescription(
+      `<#${channelId}> is a trap — posting here isn't allowed, and <@${userId}> just did. ` +
+        "They've been actioned automatically:",
+    )
+    .addFields(
+      { name: "Action taken", value: actionLines },
+      { name: "Messages purged", value: String(outcome.purged), inline: true },
+    )
+    .setTimestamp(new Date());
+
+  if (contact) embed.addFields({ name: "Appeal", value: contact });
+  if (snippet) embed.addFields({ name: "Their message", value: snippet });
+  return embed;
+}
+
+/**
+ * Posts the explanatory embed in the honeypot channel (pinging the configured target), and — if a
+ * separate alert channel is set — a no-ping mod-log copy there that also includes the raw message.
+ */
+async function notify(
   message: Message,
   config: HoneypotConfig,
   userId: string,
-  actionStr: string,
+  outcome: Outcome,
   snippet: string,
 ): Promise<void> {
-  if (!config.alertChannelId) return;
-  const ping = pingFields(config);
-  const embed = new EmbedBuilder()
-    .setColor(0xef4444)
-    .setTitle("🍯 Honeypot tripped")
-    .setDescription(`<@${userId}> posted in <#${message.channelId}>`)
-    .addFields(
-      { name: "Action", value: actionStr },
-      { name: "Message", value: snippet || "—" },
-    )
-    .setTimestamp(new Date());
-  await sendToChannel(config.alertChannelId, {
-    content: ping.content,
-    embeds: [embed],
-    allowedMentions: { users: ping.users, roles: ping.roles },
+  const contact = contactLine(config);
+  const ping = pingMention(config);
+
+  // Public notice in the trap channel. We omit the offender's message so scam/spam text isn't
+  // re-posted; the ping mentions only the configured target (not the muted user).
+  await sendToChannel(message.channelId, {
+    content: ping?.content,
+    embeds: [buildEmbed(userId, message.channelId, outcome, contact, null)],
+    allowedMentions: ping ? { users: ping.users, roles: ping.roles } : { parse: [] },
   });
+
+  // Optional mod-log copy in a separate channel — includes the message, never pings.
+  if (config.alertChannelId && config.alertChannelId !== message.channelId) {
+    await sendToChannel(config.alertChannelId, {
+      embeds: [buildEmbed(userId, message.channelId, outcome, contact, snippet || "—")],
+      allowedMentions: { parse: [] },
+    });
+  }
 }
