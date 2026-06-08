@@ -54,6 +54,7 @@ export async function register(): Promise<void> {
       const { registerWelcomeEvents } = await import("@/server/features/welcome/events");
       const { registerMemberLogEvents } = await import("@/server/features/member-logs/events");
       const { registerAutomodEvents } = await import("@/server/features/automod/events");
+      const { registerHoneypotEvents } = await import("@/server/features/honeypot/events");
       const { registerReactionRoleEvents } = await import("@/server/features/reaction-roles/events");
       const { registerStarboardEvents } = await import("@/server/features/starboard/events");
       const { registerCustomCommandEvents } = await import("@/server/features/custom-commands/events");
@@ -66,6 +67,7 @@ export async function register(): Promise<void> {
       registerWelcomeEvents(client);
       registerMemberLogEvents(client);
       registerAutomodEvents(client);
+      registerHoneypotEvents(client);
       registerReactionRoleEvents(client);
       registerStarboardEvents(client);
       registerCustomCommandEvents(client);

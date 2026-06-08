@@ -12,6 +12,7 @@ import {
   Cake,
   PawPrint,
   Shield,
+  Crosshair,
   ClipboardList,
   LifeBuoy,
   SmilePlus,
@@ -97,6 +98,7 @@ export const NAV: NavCategory[] = [
         color: "text-red-400",
         items: [
           { href: "/dashboard/automod", label: "Auto-Mod", icon: Shield },
+          { href: "/dashboard/honeypot", label: "Honeypot", icon: Crosshair },
           { href: "/dashboard/member-logs", label: "Member Logs", icon: ClipboardList },
           { href: "/dashboard/support", label: "Support & Feedback", icon: LifeBuoy },
           { href: "/dashboard/reaction-roles", label: "Reaction Roles", icon: SmilePlus },

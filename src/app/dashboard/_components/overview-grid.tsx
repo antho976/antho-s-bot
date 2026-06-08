@@ -10,6 +10,7 @@ import {
   Star,
   Sparkles,
   Shield,
+  Crosshair,
   ClipboardList,
   Cake,
   type LucideIcon,
@@ -34,6 +35,7 @@ const MODULES: { key: string; label: string; icon: LucideIcon; href: string }[] 
   { key: "starboard", label: "Highlights", icon: Sparkles, href: "/dashboard/starboard" },
   { key: "support", label: "Support", icon: LifeBuoy, href: "/dashboard/support" },
   { key: "automod", label: "Auto-Mod", icon: Shield, href: "/dashboard/automod" },
+  { key: "honeypot", label: "Honeypot", icon: Crosshair, href: "/dashboard/honeypot" },
   { key: "memberLogs", label: "Member Logs", icon: ClipboardList, href: "/dashboard/member-logs" },
   { key: "birthdays", label: "Birthdays", icon: Cake, href: "/dashboard/birthdays" },
 ];
