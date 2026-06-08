@@ -1,4 +1,5 @@
 import { getConfig as automodConfig } from "@/server/features/automod/queries";
+import { getConfig as honeypotConfig } from "@/server/features/honeypot/queries";
 import { getConfig as birthdayConfig } from "@/server/features/birthdays/queries";
 import { getConfig as levelConfig } from "@/server/features/leveling/queries";
 import { getConfig as memberLogConfig } from "@/server/features/member-logs/queries";
@@ -10,15 +11,17 @@ import { listChannels } from "@/server/features/notifications/queries";
 
 /** A portable JSON snapshot of the guild's configuration + content (for download/migration). */
 export async function exportData(guildId: string) {
-  const [leveling, welcome, automod, starboard, support, birthday, memberLogs] = await Promise.all([
-    levelConfig(guildId),
-    welcomeConfig(guildId),
-    automodConfig(guildId),
-    starboardConfig(guildId),
-    supportConfig(guildId),
-    birthdayConfig(guildId),
-    memberLogConfig(guildId),
-  ]);
+  const [leveling, welcome, automod, honeypot, starboard, support, birthday, memberLogs] =
+    await Promise.all([
+      levelConfig(guildId),
+      welcomeConfig(guildId),
+      automodConfig(guildId),
+      honeypotConfig(guildId),
+      starboardConfig(guildId),
+      supportConfig(guildId),
+      birthdayConfig(guildId),
+      memberLogConfig(guildId),
+    ]);
   const [customCommands, streamChannels] = await Promise.all([
     listCommands(guildId),
     listChannels(guildId),
@@ -27,7 +30,7 @@ export async function exportData(guildId: string) {
   return {
     exportedAt: new Date().toISOString(),
     guildId,
-    configs: { leveling, welcome, automod, starboard, support, birthday, memberLogs },
+    configs: { leveling, welcome, automod, honeypot, starboard, support, birthday, memberLogs },
     customCommands,
     streamChannels,
   };

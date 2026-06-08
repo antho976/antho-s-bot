@@ -9,6 +9,7 @@ import { getConfig as welcomeConfig } from "@/server/features/welcome/queries";
 import { getConfig as levelingConfig } from "@/server/features/leveling/queries";
 import { getConfig as starboardConfig } from "@/server/features/starboard/queries";
 import { getConfig as automodConfig } from "@/server/features/automod/queries";
+import { getConfig as honeypotConfig } from "@/server/features/honeypot/queries";
 import { getConfig as memberLogsConfig } from "@/server/features/member-logs/queries";
 import { getConfig as birthdayConfig } from "@/server/features/birthdays/queries";
 
@@ -41,6 +42,7 @@ export async function getOverview(): Promise<OverviewData> {
     leveling,
     starboard,
     automod,
+    honeypot,
     memberLogs,
     birthdays,
   ] = await Promise.all([
@@ -55,6 +57,7 @@ export async function getOverview(): Promise<OverviewData> {
     levelingConfig(g),
     starboardConfig(g),
     automodConfig(g),
+    honeypotConfig(g),
     memberLogsConfig(g),
     birthdayConfig(g),
   ]);
@@ -75,6 +78,7 @@ export async function getOverview(): Promise<OverviewData> {
       starboard: starboard.enabled,
       support: support.enabled,
       automod: automod.enabled,
+      honeypot: honeypot.enabled,
       memberLogs: memberLogs.enabled,
       birthdays: birthdays.enabled,
     },
