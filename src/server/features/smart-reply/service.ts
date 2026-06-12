@@ -5,7 +5,9 @@ import { chatCompletion, hasOpenRouterKey } from "@/server/integrations/openrout
 import { cleanReply } from "./domain/clean";
 import { decideReply } from "./domain/decide";
 import { isReplyWorthy } from "./domain/filter";
+import { detectImageRequest, splitImagePrompt } from "./domain/image-intent";
 import { buildChatMessages, type HistoryItem } from "./domain/prompt";
+import { trySendImageReply } from "./image";
 import { enqueueReply } from "./queue";
 import { getConfig, listMemoryContent, parseChannels, type SmartReplyConfig } from "./queries";
 
@@ -79,11 +81,16 @@ async function generateAndSend(
     fetchHistory(message, config.contextMessages, selfId),
   ]);
 
+  // Cheap gate: only offer the model the image option when the trigger looks like a picture
+  // request. The model still decides whether to actually draw (by emitting an IMAGE: line).
+  const allowImage = config.imagesEnabled && detectImageRequest(message.content);
+
   const messages = buildChatMessages({
     botName: config.botName,
     persona: config.persona,
     memory,
     history,
+    allowImage,
   });
 
   await message.channel.sendTyping().catch(() => {});
@@ -97,11 +104,19 @@ async function generateAndSend(
   });
   if (!raw) return;
 
-  const text = cleanReply(raw);
-  if (!text) return; // model returned only reasoning (e.g. truncated) — skip rather than dump it
+  const { caption, imagePrompt } = splitImagePrompt(cleanReply(raw));
+
+  // The model opted in to an image: try to generate + send it. On any miss (cap, no provider,
+  // generation failure) fall through to a plain text reply so the user still gets an answer.
+  if (allowImage && imagePrompt) {
+    const sent = await trySendImageReply({ message, config, caption, imagePrompt, reason });
+    if (sent) return;
+  }
+
+  if (!caption) return; // model returned only reasoning/an image line — skip rather than dump it
 
   await message.reply({
-    content: text.slice(0, config.maxReplyChars),
+    content: caption.slice(0, config.maxReplyChars),
     allowedMentions: { parse: [] }, // never let generated text ping roles/@everyone
   });
 

@@ -23,6 +23,9 @@ export function defaultConfig(guildId: string): SmartReplyConfig {
     replyOnMention: true,
     ignoreBots: true,
     allowedChannelsJson: null,
+    imagesEnabled: false,
+    imageProvider: "pollinations",
+    imageDailyCap: 25,
     updatedAt: null,
   };
 }

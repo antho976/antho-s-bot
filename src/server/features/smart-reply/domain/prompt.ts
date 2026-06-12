@@ -16,8 +16,9 @@ export function buildChatMessages(opts: {
   persona: string;
   memory: string[];
   history: HistoryItem[];
+  allowImage?: boolean; // someone asked for a picture — let the model opt in to generating one
 }): ChatMessage[] {
-  const { botName, persona, memory, history } = opts;
+  const { botName, persona, memory, history, allowImage } = opts;
 
   const lines: string[] = [
     `You are ${botName}, a member of a Discord server, chatting casually with people.`,
@@ -39,6 +40,18 @@ export function buildChatMessages(opts: {
     "- Stay in character. Don't mention being an AI, a bot, or a model unless directly asked.",
     "- Reply with only your message text, no name prefix.",
   );
+
+  if (allowImage) {
+    lines.push(
+      "",
+      "Someone is asking you to make a picture/image. You CAN make one.",
+      "If you want to, write a short normal reply, then on the FINAL line write exactly:",
+      "IMAGE: <a vivid, detailed description of the image to generate>",
+      "Only describe the picture after IMAGE: — no other text on that line. The description is for an",
+      "image generator, so be visual (subject, style, setting, lighting). Keep it clean and safe.",
+      "If you'd rather not make an image, just reply normally with no IMAGE line.",
+    );
+  }
 
   const system: ChatMessage = { role: "system", content: lines.join("\n") };
 
