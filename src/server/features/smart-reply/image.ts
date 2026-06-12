@@ -23,9 +23,11 @@ function bump(guildId: string): void {
 }
 
 /**
- * Try to generate the model's requested image and reply with it (caption + attachment).
- * Returns true when an image was sent; false (cap hit, no provider, or generation failed) so the
- * caller can fall back to a plain text reply.
+ * Handle the model's image request: generate the picture and reply with it (caption + attachment).
+ * The user explicitly asked for an image, so every outcome answers them — on a cap-hit or a
+ * generation failure we say so plainly rather than silently posting the caption (which reads as if
+ * an image was attached when none was). Returns false only when there's no provider at all, so the
+ * caller falls back to a normal text reply.
  */
 export async function trySendImageReply(opts: {
   message: Message<true>;
@@ -37,14 +39,27 @@ export async function trySendImageReply(opts: {
   const { message, config, caption, imagePrompt, reason } = opts;
 
   if (!hasImageProvider(config.imageProvider)) return false;
-  if (!underCap(message.guildId, config.imageDailyCap)) return false;
 
-  bump(message.guildId); // reserve before the slow call so a burst can't blow past the cap
+  if (!underCap(message.guildId, config.imageDailyCap)) {
+    await sendNote(message, caption, config, "🛑 I've hit today's image limit — try again tomorrow.");
+    return true;
+  }
+
   await message.channel.sendTyping().catch(() => {});
 
   const buffer = await generateImage(imagePrompt, { provider: config.imageProvider });
-  if (!buffer) return false;
+  if (!buffer) {
+    // Don't count a failure against the cap (the path is serialized, so no concurrency to guard).
+    await sendNote(
+      message,
+      caption,
+      config,
+      "🥲 couldn't generate that image right now — the free image service is busy/rate-limited. Try again in a moment.",
+    );
+    return true;
+  }
 
+  bump(message.guildId);
   await message.reply({
     content: caption ? caption.slice(0, config.maxReplyChars) : undefined,
     files: [new AttachmentBuilder(buffer, { name: "image.jpg" })],
@@ -53,4 +68,18 @@ export async function trySendImageReply(opts: {
 
   await track(message.guildId, "smartreply.image", { reason, provider: config.imageProvider });
   return true;
+}
+
+/** Reply with a short status note, keeping the model's caption (if any) as lead-in. */
+async function sendNote(
+  message: Message<true>,
+  caption: string,
+  config: SmartReplyConfig,
+  note: string,
+): Promise<void> {
+  const lead = caption ? `${caption.slice(0, config.maxReplyChars)}\n\n` : "";
+  await message.reply({
+    content: `${lead}${note}`.slice(0, 2000),
+    allowedMentions: { parse: [] },
+  });
 }
