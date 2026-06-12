@@ -126,6 +126,21 @@ export const ai: BotCommand = {
             .addChannelTypes(ChannelType.GuildText),
         ),
     )
+    .addSubcommand((s) =>
+      s
+        .setName("images")
+        .setDescription("Let the AI generate pictures when asked (free, via Pollinations)")
+        .addBooleanOption((o) =>
+          o.setName("enabled").setDescription("Turn image generation on or off"),
+        )
+        .addIntegerOption((o) =>
+          o
+            .setName("dailycap")
+            .setDescription("Max images per day (0 = unlimited)")
+            .setMinValue(0)
+            .setMaxValue(10000),
+        ),
+    )
     .addSubcommandGroup((g) =>
       g
         .setName("memory")
@@ -206,6 +221,7 @@ export const ai: BotCommand = {
           `• Context: **${c.contextMessages}** msgs · max reply **${c.maxReplyChars}** chars`,
           `• Filter: ignore < **${c.minMessageLength}** chars · daily cap **${c.dailyCap === 0 ? "∞" : c.dailyCap}**`,
           `• Reply on @mention: **${c.replyOnMention ? "yes" : "no"}** · ignore bots: **${c.ignoreBots ? "yes" : "no"}**`,
+          `• Images: **${c.imagesEnabled ? "🟢 on" : "🔴 off"}** (${c.imageProvider}) · daily cap **${c.imageDailyCap === 0 ? "∞" : c.imageDailyCap}**`,
           `• Channels: ${channels.length ? channels.map((id) => `<#${id}>`).join(", ") : "all"}`,
           `• Memories: **${mem.length}**`,
           c.persona ? `• Persona: ${c.persona.slice(0, 300)}` : "• Persona: _(none set)_",
@@ -288,6 +304,29 @@ export const ai: BotCommand = {
       await reply(
         interaction,
         `🗨️ Allowed channels: ${next.length ? next.map((id) => `<#${id}>`).join(", ") : "all"}.`,
+      );
+      return;
+    }
+
+    if (sub === "images") {
+      const patch: SmartReplyConfigPatch = {};
+      const enabled = interaction.options.getBoolean("enabled");
+      if (enabled !== null) patch.imagesEnabled = enabled;
+      const dailycap = interaction.options.getInteger("dailycap");
+      if (dailycap !== null) patch.imageDailyCap = dailycap;
+
+      if (Object.keys(patch).length === 0) {
+        await reply(interaction, "Nothing to change — pass `enabled` and/or `dailycap`.");
+        return;
+      }
+      const c = await saveConfig(guildId, patch);
+      const note =
+        c.imagesEnabled && !c.enabled
+          ? " — note: AI replies are off, so turn those on too (`/ai toggle`)."
+          : "";
+      await reply(
+        interaction,
+        `🎨 Image generation **${c.imagesEnabled ? "on" : "off"}** · daily cap **${c.imageDailyCap === 0 ? "∞" : c.imageDailyCap}**.${note}`,
       );
       return;
     }

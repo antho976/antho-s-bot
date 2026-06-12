@@ -25,6 +25,11 @@ export const smartreplyConfig = sqliteTable("smartreply_config", {
   replyOnMention: bool("reply_on_mention", true), // always answer an @mention
   ignoreBots: bool("ignore_bots", true),
   allowedChannelsJson: text("allowed_channels_json"), // JSON string[] of channel ids; null = all
+  // Image generation (text-to-image) — off by default. Provider is a discriminator so the free
+  // Pollinations backend can be swapped for Cloudflare/etc. later without touching call sites.
+  imagesEnabled: bool("images_enabled", false),
+  imageProvider: text("image_provider").notNull().default("pollinations"),
+  imageDailyCap: integer("image_daily_cap").notNull().default(25), // 0 = unlimited
   updatedAt: ts("updated_at").$defaultFn(now),
 });
 
