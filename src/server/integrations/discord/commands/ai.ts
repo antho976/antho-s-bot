@@ -128,15 +128,15 @@ export const ai: BotCommand = {
     )
     .addSubcommand((s) =>
       s
-        .setName("images")
-        .setDescription("Let the AI generate pictures when asked (free, via Pollinations)")
+        .setName("math")
+        .setDescription("Let the AI render math equations as images when asked (free)")
         .addBooleanOption((o) =>
-          o.setName("enabled").setDescription("Turn image generation on or off"),
+          o.setName("enabled").setDescription("Turn math rendering on or off"),
         )
         .addIntegerOption((o) =>
           o
             .setName("dailycap")
-            .setDescription("Max images per day (0 = unlimited)")
+            .setDescription("Max rendered equations per day (0 = unlimited)")
             .setMinValue(0)
             .setMaxValue(10000),
         ),
@@ -221,7 +221,7 @@ export const ai: BotCommand = {
           `• Context: **${c.contextMessages}** msgs · max reply **${c.maxReplyChars}** chars`,
           `• Filter: ignore < **${c.minMessageLength}** chars · daily cap **${c.dailyCap === 0 ? "∞" : c.dailyCap}**`,
           `• Reply on @mention: **${c.replyOnMention ? "yes" : "no"}** · ignore bots: **${c.ignoreBots ? "yes" : "no"}**`,
-          `• Images: **${c.imagesEnabled ? "🟢 on" : "🔴 off"}** (${c.imageProvider}) · daily cap **${c.imageDailyCap === 0 ? "∞" : c.imageDailyCap}**`,
+          `• Math images: **${c.imagesEnabled ? "🟢 on" : "🔴 off"}** · daily cap **${c.imageDailyCap === 0 ? "∞" : c.imageDailyCap}**`,
           `• Channels: ${channels.length ? channels.map((id) => `<#${id}>`).join(", ") : "all"}`,
           `• Memories: **${mem.length}**`,
           c.persona ? `• Persona: ${c.persona.slice(0, 300)}` : "• Persona: _(none set)_",
@@ -308,7 +308,7 @@ export const ai: BotCommand = {
       return;
     }
 
-    if (sub === "images") {
+    if (sub === "math") {
       const patch: SmartReplyConfigPatch = {};
       const enabled = interaction.options.getBoolean("enabled");
       if (enabled !== null) patch.imagesEnabled = enabled;
@@ -326,7 +326,7 @@ export const ai: BotCommand = {
           : "";
       await reply(
         interaction,
-        `🎨 Image generation **${c.imagesEnabled ? "on" : "off"}** · daily cap **${c.imageDailyCap === 0 ? "∞" : c.imageDailyCap}**.${note}`,
+        `🧮 Math rendering **${c.imagesEnabled ? "on" : "off"}** · daily cap **${c.imageDailyCap === 0 ? "∞" : c.imageDailyCap}**.${note}`,
       );
       return;
     }

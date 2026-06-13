@@ -26,8 +26,6 @@ const schema = z.object({
 
   // Smart-reply (AI chat) — OpenRouter key. Optional; the feature stays off until it's set.
   OPENROUTER_API_KEY: z.string().optional(),
-  // Image generation (Pollinations) needs no key; an optional token unlocks higher rate limits.
-  POLLINATIONS_TOKEN: z.string().optional(),
 
   LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(14),
 });

@@ -16,9 +16,9 @@ export function buildChatMessages(opts: {
   persona: string;
   memory: string[];
   history: HistoryItem[];
-  allowImage?: boolean; // someone asked for a picture — let the model opt in to generating one
+  allowMath?: boolean; // a math-ish request — let the model opt in to rendering an equation image
 }): ChatMessage[] {
-  const { botName, persona, memory, history, allowImage } = opts;
+  const { botName, persona, memory, history, allowMath } = opts;
 
   const lines: string[] = [
     `You are ${botName}, a member of a Discord server, chatting casually with people.`,
@@ -41,15 +41,15 @@ export function buildChatMessages(opts: {
     "- Reply with only your message text, no name prefix.",
   );
 
-  if (allowImage) {
+  if (allowMath) {
     lines.push(
       "",
-      "Someone is asking you to make a picture/image. You CAN make one.",
-      "If you want to, write a short normal reply, then on the FINAL line write exactly:",
-      "IMAGE: <a vivid, detailed description of the image to generate>",
-      "Only describe the picture after IMAGE: — no other text on that line. The description is for an",
-      "image generator, so be visual (subject, style, setting, lighting). Keep it clean and safe.",
-      "If you'd rather not make an image, just reply normally with no IMAGE line.",
+      "Discord can't display math, but you CAN render an equation as an image.",
+      "If your answer involves a formula or equation worth showing, write a short normal reply,",
+      "then on the FINAL line write exactly:",
+      "MATH: <the expression in LaTeX>",
+      "Use plain LaTeX with NO $ delimiters, e.g.  MATH: x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}",
+      "Put only LaTeX after MATH:. If there's no math to show, just reply normally with no MATH line.",
     );
   }
 
