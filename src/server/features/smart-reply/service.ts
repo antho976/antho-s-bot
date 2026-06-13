@@ -5,9 +5,9 @@ import { chatCompletion, hasOpenRouterKey } from "@/server/integrations/openrout
 import { cleanReply } from "./domain/clean";
 import { decideReply } from "./domain/decide";
 import { isReplyWorthy } from "./domain/filter";
-import { detectImageRequest, splitImagePrompt } from "./domain/image-intent";
+import { detectMathRequest, splitMathBlock } from "./domain/math";
 import { buildChatMessages, type HistoryItem } from "./domain/prompt";
-import { trySendImageReply } from "./image";
+import { trySendMathReply } from "./math";
 import { enqueueReply } from "./queue";
 import { getConfig, listMemoryContent, parseChannels, type SmartReplyConfig } from "./queries";
 
@@ -81,16 +81,16 @@ async function generateAndSend(
     fetchHistory(message, config.contextMessages, selfId),
   ]);
 
-  // Cheap gate: only offer the model the image option when the trigger looks like a picture
-  // request. The model still decides whether to actually draw (by emitting an IMAGE: line).
-  const allowImage = config.imagesEnabled && detectImageRequest(message.content);
+  // Cheap gate: only offer the model the math option when the trigger looks math-ish. The model
+  // still decides whether to actually render (by emitting a MATH: line).
+  const allowMath = config.imagesEnabled && detectMathRequest(message.content);
 
   const messages = buildChatMessages({
     botName: config.botName,
     persona: config.persona,
     memory,
     history,
-    allowImage,
+    allowMath,
   });
 
   await message.channel.sendTyping().catch(() => {});
@@ -104,12 +104,12 @@ async function generateAndSend(
   });
   if (!raw) return;
 
-  const { caption, imagePrompt } = splitImagePrompt(cleanReply(raw));
+  const { caption, latex } = splitMathBlock(cleanReply(raw));
 
-  // The model opted in to an image: try to generate + send it. On any miss (cap, no provider,
-  // generation failure) fall through to a plain text reply so the user still gets an answer.
-  if (allowImage && imagePrompt) {
-    const sent = await trySendImageReply({ message, config, caption, imagePrompt, reason });
+  // The model opted in to a math image: render + send it. On any miss (no provider) fall through
+  // to a plain text reply so the user still gets an answer.
+  if (allowMath && latex) {
+    const sent = await trySendMathReply({ message, config, caption, latex, reason });
     if (sent) return;
   }
 
