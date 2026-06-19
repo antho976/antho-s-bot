@@ -15,13 +15,16 @@ interface PairRow {
   roleId: string;
 }
 
+/** Show a custom emoji stored as `<:name:id>` as the friendlier `:name:`; pass others through. */
 function emojiDisplay(stored: string): string {
-  return /^\d+$/.test(stored) ? "(custom emoji)" : stored;
+  const m = stored.match(/^<a?:(\w+):\d+>$/);
+  return m ? `:${m[1]}:` : stored;
 }
 
 export function ReactionRolesManager({ initial }: { initial: PanelWithPairs[] }) {
   const [panels, setPanels] = useState<PanelWithPairs[]>(initial);
-  const [creating, setCreating] = useState(false);
+  // null = form closed, "new" = creating, number = editing that panel's id.
+  const [editing, setEditing] = useState<number | "new" | null>(null);
   const [busy, setBusy] = useState(false);
   const { success, error } = useToast();
   const confirm = useConfirm();
@@ -35,35 +38,61 @@ export function ReactionRolesManager({ initial }: { initial: PanelWithPairs[] })
     setPairs((p) => p.map((row, idx) => (idx === i ? { ...row, [k]: v } : row)));
   }
 
-  async function create() {
+  function openCreate() {
+    setChannelId("");
+    setTitle("");
+    setMode("toggle");
+    setPairs([{ emoji: "", roleId: "" }]);
+    setEditing("new");
+  }
+
+  function openEdit(panel: PanelWithPairs) {
+    setChannelId(panel.channelId);
+    setTitle(panel.title ?? "");
+    setMode(panel.mode);
+    setPairs(
+      panel.pairs.length
+        ? panel.pairs.map((p) => ({ emoji: emojiDisplay(p.emoji), roleId: p.roleId }))
+        : [{ emoji: "", roleId: "" }],
+    );
+    setEditing(panel.id);
+  }
+
+  async function save() {
+    const isNew = editing === "new";
     const valid = pairs.filter((p) => p.emoji.trim() && p.roleId.trim());
-    if (!channelId.trim() || valid.length === 0) {
-      error("Need a channel and at least one emoji → role.");
+    if (valid.length === 0 || (isNew && !channelId.trim())) {
+      error(isNew ? "Need a channel and at least one emoji → role." : "Need at least one emoji → role.");
       return;
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/reaction-roles/panels", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          channelId: channelId.trim(),
-          title: title.trim() || undefined,
-          mode,
-          pairs: valid.map((p) => ({ emoji: p.emoji.trim(), roleId: p.roleId.trim() })),
-        }),
-      });
+      const cleanPairs = valid.map((p) => ({ emoji: p.emoji.trim(), roleId: p.roleId.trim() }));
+      const res = await fetch(
+        isNew ? "/api/reaction-roles/panels" : `/api/reaction-roles/panels/${editing}`,
+        {
+          method: isNew ? "POST" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(isNew ? { channelId: channelId.trim() } : {}),
+            title: title.trim() || undefined,
+            mode,
+            pairs: cleanPairs,
+          }),
+        },
+      );
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        error(typeof data?.error === "string" ? data.error : "Could not create panel.");
+        error(typeof data?.error === "string" ? data.error : "Could not save panel.");
         return;
       }
-      setPanels((ps) => [...ps, data as PanelWithPairs]);
-      setCreating(false);
-      setChannelId("");
-      setTitle("");
-      setPairs([{ emoji: "", roleId: "" }]);
-      success("Panel posted.");
+      if (isNew) {
+        setPanels((ps) => [...ps, data as PanelWithPairs]);
+      } else {
+        setPanels((ps) => ps.map((p) => (p.id === editing ? (data as PanelWithPairs) : p)));
+      }
+      setEditing(null);
+      success(isNew ? "Panel posted." : "Panel updated.");
     } finally {
       setBusy(false);
     }
@@ -90,12 +119,14 @@ export function ReactionRolesManager({ initial }: { initial: PanelWithPairs[] })
 
   return (
     <div className="mt-6 space-y-4">
-      {creating ? (
+      {editing !== null ? (
         <Card className="space-y-3 p-5">
           <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Channel">
-              <ChannelSelect value={channelId} onChange={setChannelId} />
-            </Field>
+            {editing === "new" && (
+              <Field label="Channel">
+                <ChannelSelect value={channelId} onChange={setChannelId} />
+              </Field>
+            )}
             <Field label="Title">
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </Field>
@@ -115,7 +146,7 @@ export function ReactionRolesManager({ initial }: { initial: PanelWithPairs[] })
                 <Input
                   value={p.emoji}
                   onChange={(e) => setPair(i, "emoji", e.target.value)}
-                  placeholder="✅ or <:name:id>"
+                  placeholder="✅ or :CustomName:"
                 />
                 <div className="flex-1">
                   <RoleSelect value={p.roleId} onChange={(v) => setPair(i, "roleId", v)} />
@@ -137,23 +168,24 @@ export function ReactionRolesManager({ initial }: { initial: PanelWithPairs[] })
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={create} disabled={busy}>
-              Post panel
+            <Button onClick={save} disabled={busy}>
+              {editing === "new" ? "Post panel" : "Save changes"}
             </Button>
-            <Button variant="secondary" onClick={() => setCreating(false)}>
+            <Button variant="secondary" onClick={() => setEditing(null)}>
               Cancel
             </Button>
           </div>
           <p className="text-xs text-faint">
-            The bot posts the panel and adds the reactions. <strong>Toggle</strong> add/removes;{" "}
-            <strong>Unique</strong> keeps one at a time; <strong>Verify</strong> only adds.
+            Emoji: a standard one like <strong>✅</strong>, or a custom one from this server by name,
+            e.g. <code>:PeepoHype:</code>. <strong>Toggle</strong> add/removes; <strong>Unique</strong>{" "}
+            keeps one at a time; <strong>Verify</strong> only adds.
           </p>
         </Card>
       ) : (
-        <Button onClick={() => setCreating(true)}>+ New panel</Button>
+        <Button onClick={openCreate}>+ New panel</Button>
       )}
 
-      {panels.length === 0 && !creating && <p className="text-sm text-faint">No panels yet.</p>}
+      {panels.length === 0 && editing === null && <p className="text-sm text-faint">No panels yet.</p>}
 
       <div className="space-y-3">
         {panels.map((panel) => (
@@ -165,9 +197,14 @@ export function ReactionRolesManager({ initial }: { initial: PanelWithPairs[] })
                   channel {panel.channelId} · {panel.mode}
                 </span>
               </div>
-              <Button variant="danger" size="sm" onClick={() => remove(panel.id)} disabled={busy}>
-                Delete
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" size="sm" onClick={() => openEdit(panel)} disabled={busy}>
+                  Edit
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => remove(panel.id)} disabled={busy}>
+                  Delete
+                </Button>
+              </div>
             </div>
             <div className="mt-2 text-sm text-muted">
               {panel.pairs.map((pr) => (

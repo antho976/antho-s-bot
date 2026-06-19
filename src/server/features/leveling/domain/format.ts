@@ -19,3 +19,18 @@ export function fmtMinutes(min: number): string {
 export function rankPrefix(i: number): string {
   return ["🥇", "🥈", "🥉"][i] ?? `**${i + 1}.**`;
 }
+
+export const DEFAULT_LEVEL_UP_MESSAGE = "🎉 {user} reached **level {level}**!";
+
+/**
+ * Render a level-up announcement from a (possibly blank) template. `{user}` is replaced with the
+ * caller-supplied token (a mention or a plain name) and `{level}` with the level number.
+ */
+export function renderLevelUp(
+  template: string | null | undefined,
+  user: string,
+  level: number,
+): string {
+  const t = template?.trim() || DEFAULT_LEVEL_UP_MESSAGE;
+  return t.replaceAll("{user}", user).replaceAll("{level}", String(level));
+}

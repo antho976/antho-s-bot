@@ -967,6 +967,37 @@
           "notNull": false,
           "autoincrement": false
         },
+        "announce_ping": {
+          "name": "announce_ping",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "announce_min_level": {
+          "name": "announce_min_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "level_up_message": {
+          "name": "level_up_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stack_role_rewards": {
+          "name": "stack_role_rewards",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
         "voice_require_active": {
           "name": "voice_require_active",
           "type": "integer",

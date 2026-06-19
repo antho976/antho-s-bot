@@ -8,7 +8,7 @@ export interface LeaderboardEntry {
 
 export function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
   return (
-    <section className="mt-6">
+    <section>
       <h2 className="text-lg font-semibold text-text">Leaderboard</h2>
       {entries.length === 0 ? (
         <p className="mt-2 text-sm text-faint">No XP earned yet.</p>
