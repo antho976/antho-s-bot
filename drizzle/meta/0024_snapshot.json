@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5631ea0d-5af6-43d5-bff7-6408d297b0c6",
-  "prevId": "66ec34e7-805e-4c67-afd7-1484844167f6",
+  "id": "7bfdb3e1-fb35-4ae8-bc25-14d29dd12301",
+  "prevId": "adb8858c-5729-49cc-b522-410002abd282",
   "tables": {
     "accounts": {
       "name": "accounts",
@@ -966,37 +966,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "announce_ping": {
-          "name": "announce_ping",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": true
-        },
-        "announce_min_level": {
-          "name": "announce_min_level",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "level_up_message": {
-          "name": "level_up_message",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "stack_role_rewards": {
-          "name": "stack_role_rewards",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": true
         },
         "voice_require_active": {
           "name": "voice_require_active",
@@ -2931,6 +2900,66 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "rpg_dungeon_runs": {
+      "name": "rpg_dungeon_runs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dungeon_id": {
+          "name": "dungeon_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "state_json": {
+          "name": "state_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "rpg_dungeon_runs_player": {
+          "name": "rpg_dungeon_runs_player",
+          "columns": [
+            "player_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "rpg_gather_talents": {
       "name": "rpg_gather_talents",
       "columns": {
@@ -3243,6 +3272,13 @@
           "autoincrement": false,
           "default": 0
         },
+        "equipped_weapon_id": {
+          "name": "equipped_weapon_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "tool_tier": {
           "name": "tool_tier",
           "type": "integer",
@@ -3286,6 +3322,28 @@
           "notNull": false,
           "autoincrement": false
         },
+        "adventure_charges": {
+          "name": "adventure_charges",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 5
+        },
+        "adventure_charge_at": {
+          "name": "adventure_charge_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "adventure_encounter_json": {
+          "name": "adventure_encounter_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "last_hub_channel_id": {
           "name": "last_hub_channel_id",
           "type": "text",
@@ -3321,6 +3379,68 @@
           "columns": [
             "guild_id",
             "user_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "rpg_professions": {
+      "name": "rpg_professions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "prof_id": {
+          "name": "prof_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "xp": {
+          "name": "xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "rpg_professions_player_prof": {
+          "name": "rpg_professions_player_prof",
+          "columns": [
+            "player_id",
+            "prof_id"
           ],
           "isUnique": true
         }

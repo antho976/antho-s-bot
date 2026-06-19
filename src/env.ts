@@ -28,7 +28,14 @@ const schema = z.object({
   OPENROUTER_API_KEY: z.string().optional(),
 
   LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(14),
+
+  // Dev tooling — set "true" ONLY on the local test bot. Unlocks RPG cheat buttons and removes
+  // the adventure cooldown. Never set this on production.
+  DEV_TOOLS: z.string().optional(),
 });
 
 export const env = schema.parse(process.env);
 export type Env = typeof env;
+
+/** True only on the dev/test bot (DEV_TOOLS=true in its .env). Gates dev-only features off prod. */
+export const DEV_TOOLS = env.DEV_TOOLS === "true";

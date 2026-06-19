@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { RPG } from "../config";
 import { buildId } from "../domain/custom-id";
+import { classDef } from "../domain/stats";
 import type { RpgPlayer } from "../queries";
 import { computeStats } from "../skills/compute";
 import { frontier } from "../skills/graph";
@@ -18,9 +19,8 @@ import type { RpgScreen } from "./types";
 function backOnlyRow(ownerId: string): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(buildId(ownerId, "hub"))
+      .setCustomId(buildId(ownerId, "player"))
       .setLabel("Back")
-      .setEmoji("◀️")
       .setStyle(ButtonStyle.Secondary),
   );
 }
@@ -44,7 +44,7 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
   const bonus = [`Damage ${stats.damage}`, `Crit ${Math.round(stats.critChance * 100)}%`];
   if (stats.lifesteal) bonus.push(`Lifesteal ${Math.round(stats.lifesteal * 100)}%`);
   if (stats.dodge) bonus.push(`Dodge ${Math.round(stats.dodge * 100)}%`);
-  if (stats.dmgReduction) bonus.push(`Reduction ${Math.round(stats.dmgReduction * 100)}%`);
+  if (stats.dmgReduction) bonus.push(`Defence ${Math.round(stats.dmgReduction * 100)}%`);
 
   const embed = new EmbedBuilder()
     .setColor(RPG.embedColor)
@@ -89,17 +89,78 @@ export function renderSkills(player: RpgPlayer, user: User, nodeIds: string[]): 
   components.push(
     new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
+        .setCustomId(buildId(user.id, "skills", "actives"))
+        .setLabel("Actives")
+        .setEmoji("⚡")
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
         .setCustomId(buildId(user.id, "skills", "respec"))
         .setLabel("Respec (free)")
         .setEmoji("♻️")
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
-        .setCustomId(buildId(user.id, "hub"))
+        .setCustomId(buildId(user.id, "player"))
         .setLabel("Back")
-        .setEmoji("◀️")
         .setStyle(ButtonStyle.Secondary),
     ),
   );
 
   return { embeds: [embed], components, files: [image] };
+}
+
+/** Active-skill viewer: lists every active the class has at once — what each does and whether you've
+ *  unlocked it. (Actives are dormant until the dungeon engine.) */
+export function renderActiveSkills(
+  player: RpgPlayer,
+  user: User,
+  nodeIds: string[],
+  _selectedId?: string,
+): RpgScreen {
+  const tree = getTree(player.classId);
+  const cls = classDef(player.classId);
+  if (!tree) {
+    const embed = new EmbedBuilder()
+      .setColor(RPG.embedColor)
+      .setTitle("⚡  Active Skills")
+      .setDescription("Your class's skill tree isn't available yet — Warrior is in testing.");
+    return { embeds: [embed], components: [backOnlyRow(user.id)] };
+  }
+
+  const actives = tree.nodes.filter((n) => n.type === "active");
+  const embed = new EmbedBuilder().setColor(RPG.embedColor).setTitle(`⚡  ${cls.name} Active Skills`);
+
+  if (actives.length === 0) {
+    embed.setDescription("This class has no active skills yet.");
+    return { embeds: [embed], components: [backOnlyRow(user.id)] };
+  }
+
+  // One field per active so the name renders as a bold header (bigger than body text) and every
+  // skill is visible at once, rather than one-at-a-time behind a picker.
+  const allocated = new Set(nodeIds);
+  const unlockedCount = actives.filter((a) => allocated.has(a.id)).length;
+  embed
+    .setDescription(
+      `**${unlockedCount}/${actives.length} unlocked.** Allocate an active's node in the skill tree to unlock it — actives are used in Dungeons.`,
+    )
+    .addFields(
+      actives.map((a) => ({
+        name: `${allocated.has(a.id) ? "✅" : "🔒"}  ${a.name}`,
+        value: a.detail ?? a.desc,
+        inline: false,
+      })),
+    );
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "skills"))
+      .setLabel("Back")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(buildId(user.id, "hub"))
+      .setLabel("Hub")
+      .setEmoji("🏠")
+      .setStyle(ButtonStyle.Secondary),
+  );
+
+  return { embeds: [embed], components: [row] };
 }

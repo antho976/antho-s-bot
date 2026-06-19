@@ -17,6 +17,10 @@ export const welcomeConfig = sqliteTable("welcome_config", {
   goodbyeMode: text("goodbye_mode").notNull().default("text"),
   goodbyeMessage: text("goodbye_message").notNull().default("{username} just left the server."),
 
+  // Auto-role: roles handed to every member on join. JSON-encoded string[] of role IDs.
+  autoRoleEnabled: integer("auto_role_enabled", { mode: "boolean" }).notNull().default(false),
+  autoRoleIds: text("auto_role_ids").notNull().default("[]"),
+
   randomBackground: integer("random_background", { mode: "boolean" }).notNull().default(true),
   updatedAt: ts("updated_at").$defaultFn(now),
 });

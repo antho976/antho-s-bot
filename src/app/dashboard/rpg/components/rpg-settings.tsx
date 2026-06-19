@@ -40,7 +40,7 @@ export function RpgSettings({ initial }: { initial: RpgConfig }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <Field
           label="Hub channel"
-          hint="Where /rpg posts adventure hubs. Leave blank to allow it anywhere."
+          hint="Locks /rpg to this channel. Leave blank to allow it anywhere."
         >
           <ChannelSelect value={c.channelId ?? ""} onChange={(v) => set("channelId", v || null)} />
         </Field>

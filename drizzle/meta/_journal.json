@@ -159,8 +159,22 @@
     {
       "idx": 22,
       "version": "6",
-      "when": 1780620356990,
-      "tag": "0022_tired_ogun",
+      "when": 1780629078083,
+      "tag": "0022_dusty_jigsaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1780691070308,
+      "tag": "0023_mean_talisman",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1780692434714,
+      "tag": "0024_sharp_princess_powerful",
       "breakpoints": true
     },
     {
@@ -182,6 +196,13 @@
       "version": "6",
       "when": 1781304116827,
       "tag": "0027_perfect_sunspot",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "6",
+      "when": 1781911308453,
+      "tag": "0028_flaky_risque",
       "breakpoints": true
     }
   ]

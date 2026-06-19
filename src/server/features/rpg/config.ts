@@ -9,7 +9,11 @@ export const RPG = {
   regenPercent: 0.1, // hp recovered per tick = 10% of max hp (scales with level)
   embedColor: 0x8b5cf6, // violet-500
 
-  adventureCooldownMs: 3 * 60_000, // one adventure per 3 min (poll: 1–5 → 3)
+  // Adventure charges replace the old flat cooldown: you bank up to maxAdventureCharges "plays".
+  // The Nth charge takes chargeStepMs × N to refill (5/10/15/20/25 min for charges 1–5), so the
+  // more you hoard, the slower the next one comes. Computed lazily on read (no timers).
+  maxAdventureCharges: 5,
+  chargeStepMs: 5 * 60_000,
 
   // Combat. yourDamage = your class's atkBase + atkPerLevel*(level-1) + equipped weapon (0 for now;
   // the weapon term is the seam so gear matters). A fight is:
@@ -51,13 +55,17 @@ export type Difficulty = {
   goldMult: number;
   keyChance: number;
   minLevel: number; // gated: shown disabled below this level
+  // A single fight auto-resolves; with chance multiMobChance you instead face a pack of 2..maxMobs
+  // that must be fought turn-by-turn. Easy never packs; it climbs to "a lot" on Brutal.
+  multiMobChance: number;
+  maxMobs: number;
 };
 
 export const DIFFICULTIES: Difficulty[] = [
-  { id: "easy", label: "Easy", hint: "safest, least loot", emoji: "🟢", style: "success", hpMult: 0.6, dmgMult: 0.6, xpMult: 0.7, goldMult: 0.7, keyChance: 0.15, minLevel: 1 },
-  { id: "normal", label: "Normal", hint: "a fair fight", emoji: "🟡", style: "primary", hpMult: 1.0, dmgMult: 1.0, xpMult: 1.0, goldMult: 1.0, keyChance: 0.25, minLevel: 1 },
-  { id: "hard", label: "Hard", hint: "risky, better loot", emoji: "🔴", style: "danger", hpMult: 1.5, dmgMult: 1.4, xpMult: 1.6, goldMult: 1.6, keyChance: 0.45, minLevel: 1 },
-  { id: "brutal", label: "Brutal", hint: "deadly, best loot", emoji: "🟣", style: "danger", hpMult: 2.2, dmgMult: 1.9, xpMult: 2.5, goldMult: 2.5, keyChance: 0.65, minLevel: 10 },
+  { id: "easy", label: "Easy", hint: "safest, least loot", emoji: "🟢", style: "success", hpMult: 1.6, dmgMult: 1.1, xpMult: 1.0, goldMult: 1.0, keyChance: 0.60, minLevel: 1, multiMobChance: 0, maxMobs: 1 },
+  { id: "normal", label: "Normal", hint: "a fair fight", emoji: "🟡", style: "primary", hpMult: 2.0, dmgMult: 1.4, xpMult: 1.6, goldMult: 1.6, keyChance: 0.90, minLevel: 1, multiMobChance: 0.20, maxMobs: 2 },
+  { id: "hard", label: "Hard", hint: "risky, better loot", emoji: "🔴", style: "danger", hpMult: 2.5, dmgMult: 2.4, xpMult: 2.4, goldMult: 2.4, keyChance: 1.20, minLevel: 1, multiMobChance: 0.45, maxMobs: 3 },
+  { id: "brutal", label: "Brutal", hint: "deadly, best loot", emoji: "🟣", style: "danger", hpMult: 5.2, dmgMult: 4.9, xpMult: 6.2, goldMult: 6.2, keyChance: 7.00, minLevel: 1, multiMobChance: 0.75, maxMobs: 4 },
 ];
 
 export const DIFFICULTY_MAP: Record<string, Difficulty> = Object.fromEntries(
@@ -135,8 +143,8 @@ export const INTRO_LORE = [
  */
 export const HUB_CATEGORIES = [
   { view: "combat", label: "Combat", emoji: "⚔️", style: "danger" },
-  { view: "inventory", label: "Inventory", emoji: "🎒", style: "primary" },
-  { view: "skills", label: "Skills", emoji: "🌳", style: "success" },
+  { view: "player", label: "Player", emoji: "👤", style: "success" },
+  { view: "gather", label: "Gather", emoji: "⛏️", style: "primary" },
   { view: "guild", label: "Guild", emoji: "🏰", style: "success" },
   { view: "quests", label: "Quests", emoji: "📜", style: "primary" },
   { view: "options", label: "Options", emoji: "⚙️", style: "secondary" },

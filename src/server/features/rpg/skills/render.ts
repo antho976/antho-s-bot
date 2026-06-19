@@ -46,7 +46,7 @@ function outlinedText(ctx: SKRSContext2D, text: string, x: number, y: number): v
 
 function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: boolean): void {
   const big = n.type !== "minor";
-  const r = big ? 21 : 12;
+  const r = big ? 24 : 13;
 
   ctx.fillStyle = allocated ? (n.type === "active" ? COLOR.active : COLOR.passive) : front ? COLOR.frontier : COLOR.locked;
   ctx.lineWidth = front ? 4 : 3;
@@ -62,12 +62,12 @@ function drawNode(ctx: SKRSContext2D, n: SkillNode, allocated: boolean, front: b
 
   // Labels: name on top, bonus underneath. (Minors are gone — they live in Talents now.)
   ctx.textAlign = "center";
-  let ly = n.y + r + 19;
+  let ly = n.y + r + 20;
   if (n.type === "notable" || n.type === "active") {
-    ctx.font = "bold 20px sans-serif";
+    ctx.font = "bold 22px sans-serif";
     outlinedText(ctx, n.name, n.x, ly);
-    ly += 22;
-    ctx.font = "15px sans-serif";
+    ly += 24;
+    ctx.font = "16px sans-serif";
     outlinedText(ctx, n.type === "active" ? "Active" : n.desc, n.x, ly);
   }
 }
@@ -109,7 +109,7 @@ export function renderTreeImage(tree: SkillTree, allocated: Set<string>): Attach
     [COLOR.passive, "allocated"],
     [COLOR.frontierBorder, "available"],
     [COLOR.lockedBorder, "locked"],
-    [COLOR.active, "active (Dungeons)"],
+    [COLOR.active, "active"],
   ];
   let lx = 24;
   const ly = H - 26;

@@ -2,8 +2,27 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/server/db";
 import { welcomeBackgrounds, welcomeConfig } from "@/server/db/schema";
 
-export type WelcomeConfig = typeof welcomeConfig.$inferSelect;
+type ConfigRow = typeof welcomeConfig.$inferSelect;
 export type WelcomeBackground = typeof welcomeBackgrounds.$inferSelect;
+
+/** Config with the `autoRoleIds` JSON column parsed into a `string[]`. */
+export interface WelcomeConfig extends Omit<ConfigRow, "autoRoleIds"> {
+  autoRoleIds: string[];
+}
+
+function parseIds(json: string | null): string[] {
+  if (!json) return [];
+  try {
+    const v: unknown = JSON.parse(json);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function hydrate(row: ConfigRow): WelcomeConfig {
+  return { ...row, autoRoleIds: parseIds(row.autoRoleIds) };
+}
 
 export function defaultConfig(guildId: string): WelcomeConfig {
   return {
@@ -16,6 +35,8 @@ export function defaultConfig(guildId: string): WelcomeConfig {
     goodbyeChannelId: null,
     goodbyeMode: "text",
     goodbyeMessage: "{username} just left the server.",
+    autoRoleEnabled: false,
+    autoRoleIds: [],
     randomBackground: true,
     updatedAt: null,
   };
@@ -27,22 +48,25 @@ export async function getConfig(guildId: string): Promise<WelcomeConfig> {
     .from(welcomeConfig)
     .where(eq(welcomeConfig.guildId, guildId))
     .limit(1);
-  return rows[0] ?? defaultConfig(guildId);
+  return rows[0] ? hydrate(rows[0]) : defaultConfig(guildId);
 }
 
-export async function saveConfig(
-  guildId: string,
-  patch: Partial<typeof welcomeConfig.$inferInsert>,
-): Promise<WelcomeConfig> {
+export interface WelcomePatch
+  extends Partial<Omit<typeof welcomeConfig.$inferInsert, "autoRoleIds">> {
+  autoRoleIds?: string[];
+}
+
+export async function saveConfig(guildId: string, patch: WelcomePatch): Promise<WelcomeConfig> {
+  const { autoRoleIds, ...rest } = patch;
+  const set: Partial<typeof welcomeConfig.$inferInsert> = { ...rest, updatedAt: new Date() };
+  if (autoRoleIds !== undefined) set.autoRoleIds = JSON.stringify(autoRoleIds);
+
   const rows = await db
     .insert(welcomeConfig)
-    .values({ guildId, ...patch, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: welcomeConfig.guildId,
-      set: { ...patch, updatedAt: new Date() },
-    })
+    .values({ guildId, ...set })
+    .onConflictDoUpdate({ target: welcomeConfig.guildId, set })
     .returning();
-  return rows[0];
+  return hydrate(rows[0]);
 }
 
 export function listBackgrounds(guildId: string) {

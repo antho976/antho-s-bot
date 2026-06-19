@@ -1,6 +1,15 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/server/db";
-import { rpgConfig, rpgInventory, rpgPlayers, rpgPlayerSkills } from "./schema";
+import {
+  rpgConfig,
+  rpgDungeonRuns,
+  rpgGathering,
+  rpgGatherTalents,
+  rpgInventory,
+  rpgPlayers,
+  rpgPlayerSkills,
+  rpgProfessions,
+} from "./schema";
 import { classDef, maxHp } from "./domain/stats";
 
 export type RpgPlayer = typeof rpgPlayers.$inferSelect;
@@ -46,6 +55,7 @@ export async function updatePlayer(id: number, patch: PlayerPatch): Promise<void
 export async function deletePlayer(playerId: number): Promise<void> {
   await db.delete(rpgInventory).where(eq(rpgInventory.playerId, playerId));
   await db.delete(rpgPlayerSkills).where(eq(rpgPlayerSkills.playerId, playerId));
+  await db.delete(rpgDungeonRuns).where(eq(rpgDungeonRuns.playerId, playerId));
   await db.delete(rpgPlayers).where(eq(rpgPlayers.id, playerId));
 }
 
@@ -92,6 +102,175 @@ export async function addItem(playerId: number, itemId: string, qty: number): Pr
   } else {
     await db.insert(rpgInventory).values({ playerId, itemId, qty });
   }
+}
+
+export type RpgInventoryRow = typeof rpgInventory.$inferSelect;
+
+/** Every inventory row a player owns (resources + items). */
+export function listInventory(playerId: number): Promise<RpgInventoryRow[]> {
+  return db.select().from(rpgInventory).where(eq(rpgInventory.playerId, playerId));
+}
+
+export async function getInventoryRow(id: number): Promise<RpgInventoryRow | null> {
+  const rows = await db.select().from(rpgInventory).where(eq(rpgInventory.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateInventoryRow(
+  id: number,
+  patch: Partial<typeof rpgInventory.$inferInsert>,
+): Promise<void> {
+  await db.update(rpgInventory).set({ ...patch, updatedAt: new Date() }).where(eq(rpgInventory.id, id));
+}
+
+/** Insert a unique (non-stacking) instance, e.g. a crafted weapon. Returns the new row. */
+export async function insertInstance(
+  playerId: number,
+  itemId: string,
+  instanceStatsJson: string,
+): Promise<RpgInventoryRow> {
+  const [row] = await db
+    .insert(rpgInventory)
+    .values({ playerId, itemId, qty: 1, instanceStatsJson })
+    .returning();
+  return row;
+}
+
+/** Remove `qty` of a stackable item (decrement, deleting the row when it hits zero). */
+export async function removeItemQty(playerId: number, itemId: string, qty: number): Promise<void> {
+  if (qty <= 0) return;
+  const rows = await db
+    .select()
+    .from(rpgInventory)
+    .where(
+      and(
+        eq(rpgInventory.playerId, playerId),
+        eq(rpgInventory.itemId, itemId),
+        isNull(rpgInventory.instanceStatsJson),
+      ),
+    )
+    .limit(1);
+  const row = rows[0];
+  if (!row) return;
+  const left = row.qty - qty;
+  if (left > 0) {
+    await db.update(rpgInventory).set({ qty: left, updatedAt: new Date() }).where(eq(rpgInventory.id, row.id));
+  } else {
+    await db.delete(rpgInventory).where(eq(rpgInventory.id, row.id));
+  }
+}
+
+// --- Professions -----------------------------------------------------------------------------
+
+export async function getProfessionXp(playerId: number, profId: string): Promise<number> {
+  const rows = await db
+    .select()
+    .from(rpgProfessions)
+    .where(and(eq(rpgProfessions.playerId, playerId), eq(rpgProfessions.profId, profId)))
+    .limit(1);
+  return rows[0]?.xp ?? 0;
+}
+
+export async function addProfessionXp(playerId: number, profId: string, xp: number): Promise<void> {
+  if (xp <= 0) return;
+  await db
+    .insert(rpgProfessions)
+    .values({ playerId, profId, xp })
+    .onConflictDoUpdate({
+      target: [rpgProfessions.playerId, rpgProfessions.profId],
+      set: { xp: sql`${rpgProfessions.xp} + ${xp}`, updatedAt: new Date() },
+    });
+}
+
+// --- Gathering -------------------------------------------------------------------------------
+
+/** Per-skill cumulative gathering xp as a map (missing skill = 0). */
+export async function getGatheringXp(playerId: number): Promise<Record<string, number>> {
+  const rows = await db.select().from(rpgGathering).where(eq(rpgGathering.playerId, playerId));
+  return Object.fromEntries(rows.map((r) => [r.skillId, r.xp]));
+}
+
+/** Add xp to a skill (find-or-insert the row). */
+export async function addGatherXp(playerId: number, skillId: string, xp: number): Promise<void> {
+  if (xp <= 0) return;
+  await db
+    .insert(rpgGathering)
+    .values({ playerId, skillId, xp })
+    .onConflictDoUpdate({
+      target: [rpgGathering.playerId, rpgGathering.skillId],
+      set: { xp: sql`${rpgGathering.xp} + ${xp}`, updatedAt: new Date() },
+    });
+}
+
+export type GatherTalentRow = typeof rpgGatherTalents.$inferSelect;
+
+export function getGatherTalents(playerId: number): Promise<GatherTalentRow[]> {
+  return db.select().from(rpgGatherTalents).where(eq(rpgGatherTalents.playerId, playerId));
+}
+
+/** Add one rank to a talent (insert at rank 1, else +1). Caller checks points + max rank first. */
+export async function allocGatherTalent(
+  playerId: number,
+  skillId: string,
+  nodeId: string,
+): Promise<void> {
+  await db
+    .insert(rpgGatherTalents)
+    .values({ playerId, skillId, nodeId, rank: 1 })
+    .onConflictDoUpdate({
+      target: [rpgGatherTalents.playerId, rpgGatherTalents.skillId, rpgGatherTalents.nodeId],
+      set: { rank: sql`${rpgGatherTalents.rank} + 1` },
+    });
+}
+
+/** Refund a single gathering talent (delete its row, returning the spent points). */
+export async function resetGatherTalentNode(
+  playerId: number,
+  skillId: string,
+  nodeId: string,
+): Promise<void> {
+  await db
+    .delete(rpgGatherTalents)
+    .where(
+      and(
+        eq(rpgGatherTalents.playerId, playerId),
+        eq(rpgGatherTalents.skillId, skillId),
+        eq(rpgGatherTalents.nodeId, nodeId),
+      ),
+    );
+}
+
+// --- Dungeons --------------------------------------------------------------------------------
+
+export type RpgDungeonRunRow = typeof rpgDungeonRuns.$inferSelect;
+
+/** The player's one active dungeon run, or null. */
+export async function getDungeonRun(playerId: number): Promise<RpgDungeonRunRow | null> {
+  const rows = await db
+    .select()
+    .from(rpgDungeonRuns)
+    .where(eq(rpgDungeonRuns.playerId, playerId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Create or replace the active run's serialised state (one row per player, keyed by playerId). */
+export async function upsertDungeonRun(
+  playerId: number,
+  dungeonId: string,
+  stateJson: string,
+): Promise<void> {
+  await db
+    .insert(rpgDungeonRuns)
+    .values({ playerId, dungeonId, stateJson })
+    .onConflictDoUpdate({
+      target: rpgDungeonRuns.playerId,
+      set: { dungeonId, stateJson, updatedAt: new Date() },
+    });
+}
+
+export async function deleteDungeonRun(playerId: number): Promise<void> {
+  await db.delete(rpgDungeonRuns).where(eq(rpgDungeonRuns.playerId, playerId));
 }
 
 export type RpgConfig = typeof rpgConfig.$inferSelect;
