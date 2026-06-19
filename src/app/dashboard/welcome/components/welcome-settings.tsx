@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { WelcomeConfig } from "@/server/features/welcome/queries";
-import { ChannelSelect } from "@/app/dashboard/_components/guild-select";
+import { ChannelSelect, RoleMultiSelect } from "@/app/dashboard/_components/guild-select";
 import { Card } from "@/app/dashboard/_components/ui/card";
 import { Button } from "@/app/dashboard/_components/ui/button";
 import { Toggle } from "@/app/dashboard/_components/ui/toggle";
@@ -34,6 +34,8 @@ export function WelcomeSettings({ initial }: { initial: WelcomeConfig }) {
           goodbyeChannelId: c.goodbyeChannelId || null,
           goodbyeMode: c.goodbyeMode,
           goodbyeMessage: c.goodbyeMessage,
+          autoRoleEnabled: c.autoRoleEnabled,
+          autoRoleIds: c.autoRoleIds,
           randomBackground: c.randomBackground,
         }),
       });
@@ -68,6 +70,29 @@ export function WelcomeSettings({ initial }: { initial: WelcomeConfig }) {
         message={c.goodbyeMessage}
         onMessage={(v) => set("goodbyeMessage", v)}
       />
+
+      <Card className="space-y-3 p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-text">Auto-role</h2>
+            <p className="text-sm text-muted">
+              Automatically give every new member these roles when they join.
+            </p>
+          </div>
+          <Toggle
+            checked={c.autoRoleEnabled}
+            onChange={(v) => set("autoRoleEnabled", v)}
+            label="Enabled"
+          />
+        </div>
+        <Field label="Roles to assign on join">
+          <RoleMultiSelect value={c.autoRoleIds} onChange={(v) => set("autoRoleIds", v)} />
+        </Field>
+        <p className="text-xs text-faint">
+          The bot&apos;s own role must sit above these in Server Settings → Roles, or it can&apos;t
+          assign them.
+        </p>
+      </Card>
 
       <Toggle
         checked={c.randomBackground}

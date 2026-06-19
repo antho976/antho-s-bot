@@ -18,6 +18,8 @@ const patchSchema = z.object({
   goodbyeChannelId: z.string().max(40).nullable().optional(),
   goodbyeMode: mode.optional(),
   goodbyeMessage: z.string().max(1000).optional(),
+  autoRoleEnabled: z.boolean().optional(),
+  autoRoleIds: z.array(z.string().max(40)).max(25).optional(),
   randomBackground: z.boolean().optional(),
 });
 

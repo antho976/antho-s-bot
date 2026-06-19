@@ -1,9 +1,11 @@
 import { Events, type Client } from "discord.js";
+import { applyAutoRoles } from "./autorole";
 import { handleJoin, handleLeave } from "./service";
 
 /** Attach welcome/goodbye gateway handlers (needs the Server Members intent). */
 export function registerWelcomeEvents(client: Client): void {
   client.on(Events.GuildMemberAdd, async (member) => {
+    await applyAutoRoles(member);
     await handleJoin({
       guildId: member.guild.id,
       userId: member.id,
