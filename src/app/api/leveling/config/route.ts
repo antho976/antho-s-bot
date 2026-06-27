@@ -20,6 +20,10 @@ const patchSchema = z.object({
   curveFactor: z.number().min(1).max(5).optional(),
   announce: z.boolean().optional(),
   announceChannelId: z.string().max(40).nullable().optional(),
+  announcePing: z.boolean().optional(),
+  announceMinLevel: z.number().int().min(0).max(1000).optional(),
+  levelUpMessage: z.string().max(500).nullable().optional(),
+  stackRoleRewards: z.boolean().optional(),
   voiceRequireActive: z.boolean().optional(),
 });
 

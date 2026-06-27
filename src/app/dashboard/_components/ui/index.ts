@@ -4,6 +4,8 @@ export { Card } from "./card";
 export { Input, Textarea, Field, fieldBase } from "./input";
 export { Select } from "./select";
 export { Toggle } from "./toggle";
+export { Tabs } from "./tabs";
+export type { TabItem } from "./tabs";
 export { Badge } from "./badge";
 export type { BadgeTone } from "./badge";
 export { PageHeader } from "./page-header";
