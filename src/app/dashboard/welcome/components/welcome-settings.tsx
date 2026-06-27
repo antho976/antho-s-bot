@@ -19,6 +19,24 @@ export function WelcomeSettings({ initial }: { initial: WelcomeConfig }) {
     setC((p) => ({ ...p, [k]: v }));
   }
 
+  // Auto-role persists the moment it changes (no "Save settings" click needed) so the toggle
+  // can't silently revert on refresh. Partial PATCH — touches only the two auto-role fields.
+  async function saveAutoRole(autoRoleEnabled: boolean, autoRoleIds: string[], notify = false) {
+    set("autoRoleEnabled", autoRoleEnabled);
+    set("autoRoleIds", autoRoleIds);
+    try {
+      const res = await fetch("/api/welcome/config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ autoRoleEnabled, autoRoleIds }),
+      });
+      if (!res.ok) error("Could not save auto-role.");
+      else if (notify) success(autoRoleEnabled ? "Auto-role on." : "Auto-role off.");
+    } catch {
+      error("Could not save auto-role.");
+    }
+  }
+
   async function save() {
     setBusy(true);
     try {
@@ -81,12 +99,15 @@ export function WelcomeSettings({ initial }: { initial: WelcomeConfig }) {
           </div>
           <Toggle
             checked={c.autoRoleEnabled}
-            onChange={(v) => set("autoRoleEnabled", v)}
+            onChange={(v) => void saveAutoRole(v, c.autoRoleIds, true)}
             label="Enabled"
           />
         </div>
         <Field label="Roles to assign on join">
-          <RoleMultiSelect value={c.autoRoleIds} onChange={(v) => set("autoRoleIds", v)} />
+          <RoleMultiSelect
+            value={c.autoRoleIds}
+            onChange={(v) => void saveAutoRole(c.autoRoleEnabled, v)}
+          />
         </Field>
         <p className="text-xs text-faint">
           The bot&apos;s own role must sit above these in Server Settings → Roles, or it can&apos;t

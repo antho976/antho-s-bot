@@ -12,6 +12,7 @@ export const COMMAND_CATALOG: CommandInfo[] = [
   { name: "commands", summary: "List every command and who can use it", admin: false },
   { name: "help", summary: "What this bot does and how to get started", admin: false },
   { name: "suggest", summary: "Send a suggestion to the server staff", admin: false },
+  { name: "dungeons", summary: "Ping the dungeon crew (happy hour or outside happy hour)", admin: false },
   { name: "ticket", summary: "Open or close a support ticket", admin: false },
   { name: "addxp", summary: "Add or remove a member's XP", admin: true },
   { name: "poll", summary: "Post a reaction poll", admin: true },
