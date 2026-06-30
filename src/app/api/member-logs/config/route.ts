@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getConfig, saveConfig } from "@/server/features/member-logs/queries";
 
 export const dynamic = "force-dynamic";
 
-const guildId = () => env.DISCORD_GUILD_ID ?? "default";
 const b = z.boolean().optional();
 
 const patchSchema = z.object({
@@ -26,7 +25,7 @@ const patchSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await getConfig(guildId()));
+  return NextResponse.json(await getConfig(await getCurrentGuildId()));
 }
 
 export async function PATCH(req: Request) {
@@ -36,5 +35,5 @@ export async function PATCH(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  return NextResponse.json(await saveConfig(guildId(), parsed.data));
+  return NextResponse.json(await saveConfig(await getCurrentGuildId(), parsed.data));
 }

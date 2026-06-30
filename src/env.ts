@@ -13,7 +13,14 @@ const schema = z.object({
   DISCORD_TOKEN: z.string().optional(),
   DISCORD_CLIENT_ID: z.string().optional(),
   DISCORD_CLIENT_SECRET: z.string().optional(),
+  // Legacy single-guild id. Still honoured as a fallback; prefer DISCORD_GUILD_IDS for multi-server.
   DISCORD_GUILD_ID: z.string().optional(),
+  // Comma-separated guild ids the bot serves. The first is the "primary" (full features + the
+  // dashboard's default scope). Falls back to DISCORD_GUILD_ID when unset.
+  DISCORD_GUILD_IDS: z.string().optional(),
+  // Per-guild feature kill-switch. Format: `guildId:featA,featB;guildId:featC`
+  // e.g. `222...:ai,rpg` hides + disables the AI chat and RPG on that guild. See server/core/guilds.
+  DISCORD_DISABLED_FEATURES: z.string().optional(),
 
   AUTH_SECRET: z.string().optional(),
   PUBLIC_BASE_URL: z.string().default("http://localhost:3000"),

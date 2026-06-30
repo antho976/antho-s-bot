@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { listPanelsWithPairs } from "@/server/features/reaction-roles/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { ReactionRolesManager } from "./components/reaction-roles-manager";
@@ -6,7 +6,7 @@ import { ReactionRolesManager } from "./components/reaction-roles-manager";
 export const dynamic = "force-dynamic";
 
 export default async function ReactionRolesPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const panels = await listPanelsWithPairs(guildId);
 
   return (

@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { addReward, listRewards } from "@/server/features/leveling/queries";
 
 export const dynamic = "force-dynamic";
-
-const guildId = () => env.DISCORD_GUILD_ID ?? "default";
 
 const createSchema = z.object({
   level: z.number().int().min(1).max(1000),
@@ -16,7 +14,7 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await listRewards(guildId()));
+  return NextResponse.json(await listRewards(await getCurrentGuildId()));
 }
 
 export async function POST(req: Request) {
@@ -26,6 +24,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  await addReward(guildId(), parsed.data.level, parsed.data.roleId);
-  return NextResponse.json(await listRewards(guildId()), { status: 201 });
+  const guildId = await getCurrentGuildId();
+  await addReward(guildId, parsed.data.level, parsed.data.roleId);
+  return NextResponse.json(await listRewards(guildId), { status: 201 });
 }

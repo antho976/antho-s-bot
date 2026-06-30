@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { listPolls } from "@/server/features/polls/queries";
 import { createPollInChannel } from "@/server/features/polls/service";
 
 export const dynamic = "force-dynamic";
-
-const guildId = () => env.DISCORD_GUILD_ID ?? "default";
 
 const createSchema = z.object({
   channelId: z.string().min(1).max(40),
@@ -20,7 +18,7 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await listPolls(guildId()));
+  return NextResponse.json(await listPolls(await getCurrentGuildId()));
 }
 
 export async function POST(req: Request) {
@@ -32,7 +30,7 @@ export async function POST(req: Request) {
   }
   try {
     const poll = await createPollInChannel({
-      guildId: guildId(),
+      guildId: await getCurrentGuildId(),
       channelId: parsed.data.channelId,
       question: parsed.data.question,
       options: parsed.data.options,

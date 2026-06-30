@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { dailySeries, eventTypeTotals } from "@/server/features/analytics/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { StatTile } from "../_components/ui/stat-tile";
@@ -7,7 +7,7 @@ import { Card } from "../_components/ui/card";
 export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const [totals, series] = await Promise.all([eventTypeTotals(guildId), dailySeries(guildId, 30)]);
 
   const last30 = series.reduce((s, p) => s + p.count, 0);

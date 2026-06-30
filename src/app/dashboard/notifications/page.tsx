@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { listChannels } from "@/server/features/notifications/queries";
 import { listSchedule } from "@/server/features/notifications/schedule-queries";
 import { PageHeader } from "../_components/ui/page-header";
@@ -8,7 +8,7 @@ import { ScheduleManager } from "./components/schedule-manager";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const [channels, schedule] = await Promise.all([
     listChannels(guildId),
     listSchedule(guildId),

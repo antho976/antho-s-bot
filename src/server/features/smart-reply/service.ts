@@ -1,5 +1,6 @@
 import { type Message } from "discord.js";
 import { track } from "@/server/core/analytics";
+import { isFeatureEnabled } from "@/server/core/guilds";
 import { logger } from "@/server/core/logger";
 import { chatCompletion, hasOpenRouterKey } from "@/server/integrations/openrouter/client";
 import { cleanReply } from "./domain/clean";
@@ -20,6 +21,7 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 /** MessageCreate handler: decide whether to chime in, then queue the reply for serial sending. */
 export async function handleSmartReply(message: Message): Promise<void> {
   if (!message.inGuild()) return;
+  if (!isFeatureEnabled(message.guildId, "ai")) return; // AI off for this guild
   const me = message.client.user;
   if (!me || message.author.id === me.id) return; // never reply to ourselves (loop guard)
 

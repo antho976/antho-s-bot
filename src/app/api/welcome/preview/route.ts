@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { renderCard } from "@/server/features/welcome/domain/render";
 import { getConfig, pickBackground } from "@/server/features/welcome/queries";
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return new NextResponse("Bad request", { status: 400 });
 
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const config = await getConfig(guildId);
   const background = await pickBackground(guildId, parsed.data.kind, config.randomBackground);
 

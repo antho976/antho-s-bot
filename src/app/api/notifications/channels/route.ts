@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import {
   createChannel,
   listChannels,
 } from "@/server/features/notifications/queries";
 
 export const dynamic = "force-dynamic";
-
-const guildId = () => env.DISCORD_GUILD_ID ?? "default";
 
 const createSchema = z.object({
   platform: z.enum(["twitch", "youtube"]),
@@ -27,7 +25,7 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await listChannels(guildId()));
+  return NextResponse.json(await listChannels(await getCurrentGuildId()));
 }
 
 export async function POST(req: Request) {
@@ -38,6 +36,6 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const channel = await createChannel({ ...parsed.data, guildId: guildId() });
+  const channel = await createChannel({ ...parsed.data, guildId: await getCurrentGuildId() });
   return NextResponse.json(channel, { status: 201 });
 }

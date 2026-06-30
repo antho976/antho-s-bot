@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getClient } from "@/server/integrations/discord/client";
 import { getConfig, listFeedback, listTickets } from "@/server/features/support/queries";
 import { PageHeader } from "../_components/ui/page-header";
@@ -14,7 +14,7 @@ const PRIORITY_CLR: Record<string, string> = {
 };
 
 export default async function SupportPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const [config, tickets, suggestions] = await Promise.all([
     getConfig(guildId),
     listTickets(guildId, undefined, 50),

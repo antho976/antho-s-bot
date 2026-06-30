@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { createCommand, listCommands } from "@/server/features/custom-commands/queries";
 
 export const dynamic = "force-dynamic";
-
-const guildId = () => env.DISCORD_GUILD_ID ?? "default";
 
 const createSchema = z.object({
   name: z.string().min(1).max(50).regex(/^[a-z0-9_-]+$/i),
@@ -23,7 +21,7 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await listCommands(guildId()));
+  return NextResponse.json(await listCommands(await getCurrentGuildId()));
 }
 
 export async function POST(req: Request) {
@@ -37,7 +35,7 @@ export async function POST(req: Request) {
   const d = parsed.data;
   try {
     const created = await createCommand({
-      guildId: guildId(),
+      guildId: await getCurrentGuildId(),
       name: d.name.toLowerCase(),
       responseText: d.responseText ?? "",
       imageUrl: d.imageUrl ?? null,

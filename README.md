@@ -26,6 +26,10 @@ To bring the bot online and enable login, create a Discord application
 Enable the **Server Members** and **Message Content** intents, and add the OAuth redirect
 `http://localhost:3000/api/auth/callback/discord`.
 
+**Multiple servers:** set `DISCORD_GUILD_IDS` (comma-separated, first = primary) instead of
+`DISCORD_GUILD_ID`. Disable features per guild with `DISCORD_DISABLED_FEATURES` (e.g.
+`222...:ai,rpg` hides + disables AI chat and the RPG on that server). See `.env.example`.
+
 ## Scripts
 
 | Script | Does |

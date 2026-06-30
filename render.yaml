@@ -29,5 +29,11 @@ services:
         sync: false
       - key: DISCORD_GUILD_ID
         sync: false
+      # Multi-server: comma-separated guild IDs (first = primary). Overrides DISCORD_GUILD_ID.
+      - key: DISCORD_GUILD_IDS
+        sync: false
+      # Per-guild feature kill-switch, e.g. `222...:ai,rpg` (see .env.example / server/core/guilds).
+      - key: DISCORD_DISABLED_FEATURES
+        sync: false
       - key: LOG_RETENTION_DAYS
         value: "14"

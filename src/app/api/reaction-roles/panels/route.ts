@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import {
   getPairsByMessage,
   listPanelsWithPairs,
@@ -9,8 +9,6 @@ import {
 import { createReactionRolePanel } from "@/server/features/reaction-roles/service";
 
 export const dynamic = "force-dynamic";
-
-const guildId = () => env.DISCORD_GUILD_ID ?? "default";
 
 const createSchema = z.object({
   channelId: z.string().min(1).max(40),
@@ -31,7 +29,7 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await listPanelsWithPairs(guildId()));
+  return NextResponse.json(await listPanelsWithPairs(await getCurrentGuildId()));
 }
 
 export async function POST(req: Request) {
@@ -44,7 +42,7 @@ export async function POST(req: Request) {
   }
   try {
     const panel = await createReactionRolePanel(
-      guildId(),
+      await getCurrentGuildId(),
       parsed.data.channelId,
       parsed.data.title,
       parsed.data.mode,

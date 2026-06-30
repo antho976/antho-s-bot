@@ -1,6 +1,7 @@
 import { performance } from "node:perf_hooks";
 import { Events, MessageFlags, type Client } from "discord.js";
 import { logger } from "@/server/core/logger";
+import { isFeatureEnabled } from "@/server/core/guilds";
 import { RPG_PREFIX } from "./domain/custom-id";
 import { recordClick } from "./metrics";
 import { handleRpgComponent, type RpgResponse } from "./router";
@@ -21,6 +22,10 @@ export function registerRpgEvents(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
     if (!interaction.customId.startsWith(`${RPG_PREFIX}:`)) return;
+    if (interaction.guildId && !isFeatureEnabled(interaction.guildId, "rpg")) {
+      await interaction.deferUpdate().catch(() => {});
+      return;
+    }
 
     // Drop a user's overlapping click (ack it so Discord doesn't error, then bail).
     if (inFlight.has(interaction.user.id)) {

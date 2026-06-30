@@ -1,5 +1,6 @@
 import { getHealth } from "@/server/core/health";
 import { getOverview } from "@/server/core/overview";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { PageHeader } from "./_components/ui/page-header";
 import { StatTile } from "./_components/ui/stat-tile";
 import { OverviewGrid } from "./_components/overview-grid";
@@ -8,7 +9,8 @@ import { MaintenanceActions } from "./_components/maintenance-actions";
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const [health, overview] = await Promise.all([getHealth(), getOverview()]);
+  const guildId = await getCurrentGuildId();
+  const [health, overview] = await Promise.all([getHealth(), getOverview(guildId)]);
 
   const stats = [
     { label: "Bot", value: health.discord.ready ? "Online" : "Offline", bad: !health.discord.ready },

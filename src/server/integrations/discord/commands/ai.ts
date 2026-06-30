@@ -170,6 +170,7 @@ export const ai: BotCommand = {
             ),
         ),
     ),
+  feature: "ai",
   execute: async (interaction) => {
     const guildId = await ensureAdmin(interaction);
     if (!guildId) return;

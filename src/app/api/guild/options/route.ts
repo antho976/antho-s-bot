@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getGuildOptions } from "@/server/integrations/discord/guild-options";
 
 export const dynamic = "force-dynamic";
@@ -8,5 +8,5 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await getGuildOptions(env.DISCORD_GUILD_ID ?? "default"));
+  return NextResponse.json(await getGuildOptions(await getCurrentGuildId()));
 }

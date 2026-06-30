@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import {
   createScheduleEntry,
   listSchedule,
 } from "@/server/features/notifications/schedule-queries";
 
 export const dynamic = "force-dynamic";
-
-const guildId = () => env.DISCORD_GUILD_ID ?? "default";
 
 const createSchema = z.object({
   channelId: z.number().int().optional(),
@@ -22,7 +20,7 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await listSchedule(guildId()));
+  return NextResponse.json(await listSchedule(await getCurrentGuildId()));
 }
 
 export async function POST(req: Request) {
@@ -35,7 +33,7 @@ export async function POST(req: Request) {
   }
   const d = parsed.data;
   const entry = await createScheduleEntry({
-    guildId: guildId(),
+    guildId: await getCurrentGuildId(),
     channelId: d.channelId,
     title: d.title,
     startsAt: new Date(d.startsAt),
