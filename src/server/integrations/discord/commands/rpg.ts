@@ -1,6 +1,7 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import type { BotCommand } from "./types";
 import { track } from "@/server/core/analytics";
+import { isFeatureEnabled } from "@/server/core/guilds";
 import { getPlayer, getRpgConfig } from "@/server/features/rpg/queries";
 import { rememberHubMessage, withRegen } from "@/server/features/rpg/service";
 import { renderHub } from "@/server/features/rpg/views/hub";
@@ -8,12 +9,21 @@ import { renderIntro } from "@/server/features/rpg/views/onboarding";
 
 export const rpg: BotCommand = {
   data: new SlashCommandBuilder().setName("rpg").setDescription("Open your adventure hub"),
+  feature: "rpg",
   execute: async (interaction) => {
     if (!interaction.inGuild()) {
       await interaction.reply({ content: "Use this in a server.", flags: MessageFlags.Ephemeral });
       return;
     }
     const guildId = interaction.guildId;
+
+    if (!isFeatureEnabled(guildId, "rpg")) {
+      await interaction.reply({
+        content: "The RPG isn't available on this server.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
 
     const config = await getRpgConfig(guildId);
     if (!config.enabled) {

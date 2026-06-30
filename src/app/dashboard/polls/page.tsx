@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { listPolls } from "@/server/features/polls/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { PollsManager } from "./components/polls-manager";
@@ -6,7 +6,7 @@ import { PollsManager } from "./components/polls-manager";
 export const dynamic = "force-dynamic";
 
 export default async function PollsPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const polls = await listPolls(guildId);
 
   return (

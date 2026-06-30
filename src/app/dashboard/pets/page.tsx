@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { listSubmissions } from "@/server/features/pets/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { PetsManager } from "./components/pets-manager";
@@ -6,7 +6,7 @@ import { PetsManager } from "./components/pets-manager";
 export const dynamic = "force-dynamic";
 
 export default async function PetsPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const submissions = await listSubmissions(guildId);
 
   return (

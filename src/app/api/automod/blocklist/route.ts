@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { addBlocklist, listBlocklist } from "@/server/features/automod/queries";
 
 export const dynamic = "force-dynamic";
-
-const guildId = () => env.DISCORD_GUILD_ID ?? "default";
 
 const createSchema = z.object({
   domain: z.string().min(1).max(200),
@@ -16,7 +14,7 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  return NextResponse.json(await listBlocklist(guildId()));
+  return NextResponse.json(await listBlocklist(await getCurrentGuildId()));
 }
 
 export async function POST(req: Request) {
@@ -26,6 +24,6 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const created = await addBlocklist(guildId(), parsed.data.domain, parsed.data.note);
+  const created = await addBlocklist(await getCurrentGuildId(), parsed.data.domain, parsed.data.note);
   return NextResponse.json(created, { status: 201 });
 }

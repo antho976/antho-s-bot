@@ -1,4 +1,3 @@
-import { env } from "@/env";
 import { listChannels } from "@/server/features/notifications/queries";
 import { listSchedule } from "@/server/features/notifications/schedule-queries";
 import { listTickets, getConfig as supportConfig } from "@/server/features/support/queries";
@@ -27,8 +26,8 @@ export interface OverviewData {
 }
 
 /** One round-trip snapshot of every module's state + the headline counts for the Overview hub. */
-export async function getOverview(): Promise<OverviewData> {
-  const g = env.DISCORD_GUILD_ID ?? "default";
+export async function getOverview(guildId: string): Promise<OverviewData> {
+  const g = guildId;
 
   const [
     channels,

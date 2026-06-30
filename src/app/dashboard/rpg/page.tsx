@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getRpgConfig } from "@/server/features/rpg/queries";
 import { getLatency } from "@/server/features/rpg/metrics";
 import { PageHeader } from "../_components/ui/page-header";
@@ -8,7 +8,7 @@ import { LatencyPanel } from "./components/latency-panel";
 export const dynamic = "force-dynamic";
 
 export default async function RpgPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const config = await getRpgConfig(guildId);
   const latency = getLatency();
 

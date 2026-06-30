@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { runMaintenance } from "@/server/core/maintenance";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   }
   const result = await runMaintenance(
     parsed.data.action,
-    env.DISCORD_GUILD_ID ?? "default",
+    (await getCurrentGuildId()),
     session.user.discordId ?? "unknown",
   );
   return NextResponse.json(result);

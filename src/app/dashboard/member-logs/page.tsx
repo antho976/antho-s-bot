@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getConfig, recentEvents } from "@/server/features/member-logs/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { MemberLogsSettings } from "./components/member-logs-settings";
@@ -6,7 +6,7 @@ import { MemberLogsSettings } from "./components/member-logs-settings";
 export const dynamic = "force-dynamic";
 
 export default async function MemberLogsPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const [config, events] = await Promise.all([
     getConfig(guildId),
     recentEvents(guildId, 30),

@@ -1,7 +1,8 @@
-import { SlashCommandBuilder } from "discord.js";
+import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import type { BotCommand } from "./types";
 import { ensureGuild } from "./guard";
 import { track } from "@/server/core/analytics";
+import { isFeatureEnabled } from "@/server/core/guilds";
 
 // The dungeon crew role this command rallies. Both pings mention it.
 const DUNGEON_ROLE_ID = "1462471504187883531";
@@ -26,9 +27,18 @@ export const dungeons: BotCommand = {
           { name: "Outside Happy Hour", value: "outside" },
         ),
     ),
+  feature: "dungeons",
   execute: async (interaction) => {
     const guildId = await ensureGuild(interaction);
     if (!guildId) return;
+
+    if (!isFeatureEnabled(guildId, "dungeons")) {
+      await interaction.reply({
+        content: "Not available on this server.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
 
     const when = interaction.options.getString("when", true);
     // Public reply (not ephemeral) so the role ping actually notifies the crew.

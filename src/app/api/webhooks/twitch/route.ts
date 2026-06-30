@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { env } from "@/env";
 import { logger } from "@/server/core/logger";
 import { twitchProvider } from "@/server/integrations/twitch/provider";
-import { getChannelByRef } from "@/server/features/notifications/queries";
+import { getChannelsByRef } from "@/server/features/notifications/queries";
 import { handleStreamEvent } from "@/server/features/notifications/service";
 
 // Inbound Twitch EventSub callback. Inert until subscriptions are registered, but the
@@ -25,10 +24,10 @@ export async function POST(req: Request) {
     });
   }
 
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  // Fan out to every guild watching this streamer (a channel can be watched by multiple servers).
   for (const ev of twitchProvider.parse(raw, req.headers)) {
-    const channel = await getChannelByRef(guildId, "twitch", ev.channelRef);
-    if (channel) await handleStreamEvent(channel.id, ev.input);
+    const channels = await getChannelsByRef("twitch", ev.channelRef);
+    for (const channel of channels) await handleStreamEvent(channel.id, ev.input);
   }
 
   logger.debug("twitch", `EventSub message handled (${type ?? "notification"}).`);

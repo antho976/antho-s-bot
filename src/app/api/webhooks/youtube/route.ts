@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { env } from "@/env";
 import { youtubeProvider } from "@/server/integrations/youtube/provider";
-import { getChannelByRef } from "@/server/features/notifications/queries";
+import { getChannelsByRef } from "@/server/features/notifications/queries";
 import { handleStreamEvent } from "@/server/features/notifications/service";
 
 // Inbound YouTube PubSubHubbub callback. GET handles the subscription challenge; POST handles
@@ -21,11 +20,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const raw = await req.text();
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
 
+  // Fan out to every guild watching this channel.
   for (const ev of youtubeProvider.parse(raw, req.headers)) {
-    const channel = await getChannelByRef(guildId, "youtube", ev.channelRef);
-    if (channel) await handleStreamEvent(channel.id, ev.input);
+    const channels = await getChannelsByRef("youtube", ev.channelRef);
+    for (const channel of channels) await handleStreamEvent(channel.id, ev.input);
   }
   return new NextResponse(null, { status: 204 });
 }

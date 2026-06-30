@@ -19,7 +19,7 @@ export async function getChannel(id: number): Promise<StreamChannel | null> {
   return rows[0] ?? null;
 }
 
-/** Look up a watched channel by its platform handle/id — used by inbound webhooks. */
+/** Look up a watched channel by its platform handle/id within one guild. */
 export async function getChannelByRef(
   guildId: string,
   platform: string,
@@ -37,6 +37,22 @@ export async function getChannelByRef(
     )
     .limit(1);
   return rows[0] ?? null;
+}
+
+/**
+ * All watched channels matching a platform handle/id, ACROSS every guild — used by inbound
+ * webhooks so a single streamer going live fans out to every server that watches them.
+ */
+export async function getChannelsByRef(
+  platform: string,
+  channelRef: string,
+): Promise<StreamChannel[]> {
+  return db
+    .select()
+    .from(streamChannels)
+    .where(
+      and(eq(streamChannels.platform, platform), eq(streamChannels.channelRef, channelRef)),
+    );
 }
 
 export async function createChannel(data: NewStreamChannel): Promise<StreamChannel> {

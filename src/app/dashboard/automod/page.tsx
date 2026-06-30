@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import {
   getConfig,
   listBlocklist,
@@ -11,7 +11,7 @@ import { BlocklistManager } from "./components/blocklist-manager";
 export const dynamic = "force-dynamic";
 
 export default async function AutomodPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const [config, blocklist, actions] = await Promise.all([
     getConfig(guildId),
     listBlocklist(guildId),

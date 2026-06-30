@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getConfig } from "@/server/features/starboard/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { StarboardSettings } from "./components/starboard-settings";
@@ -6,7 +6,7 @@ import { StarboardSettings } from "./components/starboard-settings";
 export const dynamic = "force-dynamic";
 
 export default async function StarboardPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const config = await getConfig(guildId);
 
   return (

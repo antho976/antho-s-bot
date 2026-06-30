@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getConfig, recentActions } from "@/server/features/honeypot/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { HoneypotSettings } from "./components/honeypot-settings";
@@ -6,7 +6,7 @@ import { HoneypotSettings } from "./components/honeypot-settings";
 export const dynamic = "force-dynamic";
 
 export default async function HoneypotPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const [config, actions] = await Promise.all([
     getConfig(guildId),
     recentActions(guildId, 30),

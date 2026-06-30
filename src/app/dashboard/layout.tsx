@@ -2,8 +2,11 @@ import type { CSSProperties, ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/server/auth";
 import { getAccent } from "@/server/core/settings";
+import { getCurrentGuildId } from "@/server/core/current-guild";
+import { listManagedGuilds } from "@/server/integrations/discord/guilds";
 import { TopNav } from "./_components/top-nav";
 import { SideNav } from "./_components/side-nav";
+import { GuildSwitcher } from "./_components/guild-switcher";
 import { NavSearchProvider } from "./_components/nav-search";
 import { buttonClass } from "./_components/ui/button";
 import { ToastProvider } from "./_components/ui/toast";
@@ -15,6 +18,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const level = session.user.accessLevel ?? "viewer";
   const accent = await getAccent();
+  const guilds = listManagedGuilds();
+  const currentGuild = await getCurrentGuildId();
 
   return (
     <div
@@ -31,6 +36,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 {session.user.name ?? "Signed in"}
               </div>
               <div className="mt-0.5 text-xs uppercase tracking-wide text-faint">{level}</div>
+              {guilds.length > 1 && (
+                <div className="mt-3">
+                  <div className="mb-1 text-[10px] uppercase tracking-wide text-faint">Server</div>
+                  <GuildSwitcher guilds={guilds} current={currentGuild} />
+                </div>
+              )}
               <form
                 action={async () => {
                   "use server";

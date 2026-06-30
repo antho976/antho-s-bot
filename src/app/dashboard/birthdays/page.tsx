@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getConfig, listBirthdays } from "@/server/features/birthdays/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { BirthdaySettings } from "./components/birthday-settings";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const MONTHS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default async function BirthdaysPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const [config, list] = await Promise.all([getConfig(guildId), listBirthdays(guildId)]);
   const sorted = [...list].sort((a, b) => a.month - b.month || a.day - b.day);
 

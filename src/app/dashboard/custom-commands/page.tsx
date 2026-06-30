@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { listCommands } from "@/server/features/custom-commands/queries";
 import { PageHeader } from "../_components/ui/page-header";
 import { CustomCommandsManager } from "./components/custom-commands-manager";
@@ -6,7 +6,7 @@ import { CustomCommandsManager } from "./components/custom-commands-manager";
 export const dynamic = "force-dynamic";
 
 export default async function CustomCommandsPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const commands = await listCommands(guildId);
 
   return (

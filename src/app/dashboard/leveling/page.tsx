@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { getCurrentGuildId } from "@/server/core/current-guild";
 import { getClient } from "@/server/integrations/discord/client";
 import {
   getConfig,
@@ -17,7 +17,7 @@ import { RoleLevelSync } from "./components/role-level-sync";
 export const dynamic = "force-dynamic";
 
 export default async function LevelingPage() {
-  const guildId = env.DISCORD_GUILD_ID ?? "default";
+  const guildId = await getCurrentGuildId();
   const [config, rows, rewards, stats] = await Promise.all([
     getConfig(guildId),
     leaderboard(guildId, 25),
