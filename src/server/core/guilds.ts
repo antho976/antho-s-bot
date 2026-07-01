@@ -10,7 +10,8 @@ import { env } from "@/env";
  * bucket the old code wrote to), so a fresh install still functions.
  */
 export const GUILD_IDS: string[] = (() => {
-  const raw = env.DISCORD_GUILD_IDS ?? env.DISCORD_GUILD_ID ?? "";
+  // `||` (not `??`) so an empty DISCORD_GUILD_IDS="" still falls back to DISCORD_GUILD_ID.
+  const raw = env.DISCORD_GUILD_IDS || env.DISCORD_GUILD_ID || "";
   const ids = [...new Set(raw.split(",").map((s) => s.trim()).filter(Boolean))];
   return ids.length ? ids : ["default"];
 })();
