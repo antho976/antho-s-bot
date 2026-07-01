@@ -18,6 +18,7 @@ import {
   SmilePlus,
   Sparkles,
   MessageSquareText,
+  Megaphone,
   BarChart3,
   LineChart,
   Settings,
@@ -108,7 +109,10 @@ export const NAV: NavCategory[] = [
       {
         title: "Content",
         color: "text-sky-400",
-        items: [{ href: "/dashboard/custom-commands", label: "Tags / Commands", icon: MessageSquareText }],
+        items: [
+          { href: "/dashboard/custom-commands", label: "Tags / Commands", icon: MessageSquareText },
+          { href: "/dashboard/embed", label: "Embed Creator", icon: Megaphone },
+        ],
       },
     ],
   },
