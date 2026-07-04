@@ -19,6 +19,7 @@ const updateSchema = z.object({
   alertOnLive: z.boolean().optional(),
   alertOnEnd: z.boolean().optional(),
   alertOnUpload: z.boolean().optional(),
+  statsIntervalMin: z.number().int().min(1).max(120).optional(),
 });
 
 type Ctx = { params: Promise<{ id: string }> };

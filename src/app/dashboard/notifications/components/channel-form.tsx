@@ -19,6 +19,7 @@ export interface ChannelFormValues {
   alertOnLive: boolean;
   alertOnEnd: boolean;
   alertOnUpload: boolean;
+  statsIntervalMin: number;
   messageTemplate: string;
 }
 
@@ -33,6 +34,7 @@ function fromChannel(channel?: StreamChannel): ChannelFormValues {
     alertOnLive: channel?.alertOnLive ?? true,
     alertOnEnd: channel?.alertOnEnd ?? false,
     alertOnUpload: channel?.alertOnUpload ?? true,
+    statsIntervalMin: channel?.statsIntervalMin ?? 10,
     messageTemplate: channel?.messageTemplate ?? "",
   };
 }
@@ -83,6 +85,18 @@ export function ChannelForm({
         </Field>
         <Field label="Ping role (optional)">
           <RoleSelect value={v.pingRoleId} onChange={(val) => set("pingRoleId", val)} />
+        </Field>
+        <Field
+          label="Viewer stats refresh (minutes)"
+          hint="How often the live embed's viewer count updates."
+        >
+          <Input
+            type="number"
+            min={1}
+            max={120}
+            value={v.statsIntervalMin}
+            onChange={(e) => set("statsIntervalMin", e.target.valueAsNumber)}
+          />
         </Field>
       </div>
 

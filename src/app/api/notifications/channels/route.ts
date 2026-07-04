@@ -20,6 +20,7 @@ const createSchema = z.object({
   alertOnLive: z.boolean().optional(),
   alertOnEnd: z.boolean().optional(),
   alertOnUpload: z.boolean().optional(),
+  statsIntervalMin: z.number().int().min(1).max(120).optional(),
 });
 
 export async function GET() {

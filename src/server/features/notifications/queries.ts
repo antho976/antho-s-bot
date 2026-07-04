@@ -1,9 +1,15 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/server/db";
-import { streamChannels, streamEvents, streamState } from "@/server/db/schema";
+import {
+  streamChannels,
+  streamEvents,
+  streamSchedule,
+  streamState,
+} from "@/server/db/schema";
 
 export type StreamChannel = typeof streamChannels.$inferSelect;
 export type NewStreamChannel = typeof streamChannels.$inferInsert;
+export type StreamState = typeof streamState.$inferSelect;
 type StatePatch = Partial<typeof streamState.$inferInsert>;
 
 export function listChannels(guildId: string) {
@@ -75,6 +81,29 @@ export async function updateChannel(
 export async function deleteChannel(id: number): Promise<void> {
   await db.delete(streamChannels).where(eq(streamChannels.id, id));
   await db.delete(streamState).where(eq(streamState.channelId, id));
+  // schedule entries linked to this channel can no longer resolve a reminder target
+  await db.delete(streamSchedule).where(eq(streamSchedule.channelId, id));
+}
+
+export async function getState(channelId: number): Promise<StreamState | null> {
+  const rows = await db
+    .select()
+    .from(streamState)
+    .where(eq(streamState.channelId, channelId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Every channel currently marked live, with its state — drives the viewer-stats updater. */
+export async function listLiveStates(): Promise<
+  Array<{ channel: StreamChannel; state: StreamState }>
+> {
+  const rows = await db
+    .select({ channel: streamChannels, state: streamState })
+    .from(streamState)
+    .innerJoin(streamChannels, eq(streamChannels.id, streamState.channelId))
+    .where(eq(streamState.isLive, true));
+  return rows;
 }
 
 export async function recordEvent(

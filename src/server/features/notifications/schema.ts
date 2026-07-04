@@ -30,6 +30,8 @@ export const streamChannels = sqliteTable(
     alertOnLive: integer("alert_on_live", { mode: "boolean" }).notNull().default(true),
     alertOnEnd: integer("alert_on_end", { mode: "boolean" }).notNull().default(false),
     alertOnUpload: integer("alert_on_upload", { mode: "boolean" }).notNull().default(true),
+    // how often (minutes) the live embed's viewer stats refresh
+    statsIntervalMin: integer("stats_interval_min").notNull().default(10),
 
     createdAt: ts("created_at").$defaultFn(now),
     updatedAt: ts("updated_at").$defaultFn(now),
@@ -46,6 +48,16 @@ export const streamState = sqliteTable("stream_state", {
   lastVideoId: text("last_video_id"),
   currentTitle: text("current_title"),
   currentGame: text("current_game"),
+  // the live announcement message, so the stats job can edit it in place
+  liveMessageId: text("live_message_id"),
+  liveMessageChannelId: text("live_message_channel_id"),
+  // viewer stats for the current session (sum+samples → average, for the end summary)
+  currentViewers: integer("current_viewers"),
+  peakViewers: integer("peak_viewers"),
+  viewerSum: integer("viewer_sum"),
+  viewerSamples: integer("viewer_samples"),
+  lastStatsAt: ts("last_stats_at"),
+  isTest: integer("is_test", { mode: "boolean" }).notNull().default(false),
   updatedAt: ts("updated_at").$defaultFn(now),
 });
 

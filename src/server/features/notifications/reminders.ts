@@ -14,13 +14,16 @@ async function reminderTarget(entry: ScheduleEntry) {
   return { channelId: channel.discordChannelId, pingRoleId: channel.pingRoleId };
 }
 
-async function fire(entry: ScheduleEntry, label: string): Promise<void> {
+async function fire(entry: ScheduleEntry): Promise<void> {
   const target = await reminderTarget(entry);
   if (!target) {
     logger.warn("reminders", `Schedule #${entry.id} has no target Discord channel — skipped.`);
     return;
   }
-  const text = `🔔 **${entry.title ?? "Stream"}** starts ${label}!`;
+  // A Discord relative timestamp self-corrects ("in 58 minutes", "in 7 minutes") even when a
+  // reminder fires late — e.g. after the bot was down.
+  const startsAt = Math.floor((entry.startsAt?.getTime() ?? 0) / 1000);
+  const text = `🔔 **${entry.title ?? "Stream"}** starts <t:${startsAt}:R> (<t:${startsAt}:t>)!`;
   const content = target.pingRoleId ? `<@&${target.pingRoleId}> ${text}` : text;
   await sendToChannel(target.channelId, {
     content,
@@ -35,13 +38,21 @@ export async function checkReminders(): Promise<void> {
   for (const entry of entries) {
     const msUntil = (entry.startsAt?.getTime() ?? 0) - now;
 
-    if (entry.remind1h && !entry.remind1hSent && msUntil <= HOUR) {
-      await fire(entry, "in about an hour");
-      await markReminderSent(entry.id, "1h");
+    // Already started (e.g. caught up after downtime): a reminder would be nonsense now.
+    if (msUntil <= 0) {
+      if (entry.remind1h && !entry.remind1hSent) await markReminderSent(entry.id, "1h");
+      if (entry.remind10m && !entry.remind10mSent) await markReminderSent(entry.id, "10m");
+      continue;
     }
+
     if (entry.remind10m && !entry.remind10mSent && msUntil <= TEN_MIN) {
-      await fire(entry, "in 10 minutes");
+      await fire(entry);
       await markReminderSent(entry.id, "10m");
+      // Swallow a pending 1h reminder so both don't land back-to-back in the same tick.
+      if (entry.remind1h && !entry.remind1hSent) await markReminderSent(entry.id, "1h");
+    } else if (entry.remind1h && !entry.remind1hSent && msUntil <= HOUR) {
+      await fire(entry);
+      await markReminderSent(entry.id, "1h");
     }
   }
 }

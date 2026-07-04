@@ -29,12 +29,14 @@ export async function register(): Promise<void> {
   try {
     const { startScheduler, onTick } = await import("@/server/core/scheduler");
     const { checkReminders } = await import("@/server/features/notifications/reminders");
+    const { updateLiveStats } = await import("@/server/features/notifications/stats");
     const { checkVoiceXp } = await import("@/server/features/leveling/voice-tick");
     const { checkGiveaways } = await import("@/server/features/giveaways/service");
     const { checkPolls } = await import("@/server/features/polls/service");
     const { checkBirthdays } = await import("@/server/features/birthdays/service");
     const { rollupAnalytics } = await import("@/server/features/analytics/rollup");
     onTick("stream-reminders", checkReminders);
+    onTick("stream-stats", updateLiveStats);
     onTick("voice-xp", checkVoiceXp);
     onTick("giveaways", checkGiveaways);
     onTick("polls", checkPolls);

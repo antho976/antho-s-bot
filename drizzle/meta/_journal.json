@@ -204,6 +204,13 @@
       "when": 1781911308453,
       "tag": "0028_flaky_risque",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1783184007677,
+      "tag": "0029_groovy_yellow_claw",
+      "breakpoints": true
     }
   ]
 }
