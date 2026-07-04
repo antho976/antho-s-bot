@@ -16,12 +16,14 @@ export function NotificationsManager({ initial }: { initial: StreamChannel[] }) 
   const confirm = useConfirm();
 
   function payload(v: ChannelFormValues) {
+    const interval = Number.isFinite(v.statsIntervalMin) ? Math.round(v.statsIntervalMin) : 10;
     return {
       ...v,
       displayName: v.displayName.trim() || undefined,
       discordChannelId: v.discordChannelId.trim() || undefined,
       pingRoleId: v.pingRoleId.trim() || undefined,
       messageTemplate: v.messageTemplate.trim() || undefined,
+      statsIntervalMin: Math.min(120, Math.max(1, interval)),
     };
   }
 

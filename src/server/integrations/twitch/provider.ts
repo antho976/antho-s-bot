@@ -6,9 +6,17 @@ import type {
   StreamProvider,
 } from "@/server/features/notifications/domain/provider";
 
+interface EventSubBody {
+  subscription?: { type?: string };
+  event?: {
+    broadcaster_user_login?: string;
+    started_at?: string;
+  };
+}
+
 /**
- * Twitch EventSub provider. The signature-verification + challenge handshake are ready; the
- * subscribe() and parse() bodies are filled in when TWITCH_* credentials are added (Phase 1).
+ * Twitch EventSub provider. Signature verification + event parsing are live; subscribe() is
+ * filled in when EventSub subscription management lands (needs TWITCH_* credentials).
  */
 export const twitchProvider: StreamProvider = {
   platform: "twitch",
@@ -39,8 +47,36 @@ export const twitchProvider: StreamProvider = {
     }
   },
 
-  parse(): ParsedEvent[] {
-    // TODO (creds): map stream.online → {type:"live"}, stream.offline → {type:"end"}.
+  parse(rawBody, headers): ParsedEvent[] {
+    if (headers.get("twitch-eventsub-message-type") !== "notification") return [];
+
+    let body: EventSubBody;
+    try {
+      body = JSON.parse(rawBody) as EventSubBody;
+    } catch {
+      return [];
+    }
+    const login = body.event?.broadcaster_user_login;
+    if (!login) return [];
+    const url = `https://twitch.tv/${login}`;
+
+    const type = body.subscription?.type;
+    if (type === "stream.online") {
+      const startedAt = body.event?.started_at ? Date.parse(body.event.started_at) : NaN;
+      return [
+        {
+          channelRef: login,
+          input: {
+            type: "live",
+            url,
+            startedAt: Number.isFinite(startedAt) ? startedAt : Date.now(),
+          },
+        },
+      ];
+    }
+    if (type === "stream.offline") {
+      return [{ channelRef: login, input: { type: "end", url } }];
+    }
     return [];
   },
 };
